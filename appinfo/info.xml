@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+    <id>flz_akut</id>
+    <name>Akutschichtvermittlung</name>
+    <summary>Vermittlung kurzfristig offener Assistenzschichten.</summary>
+    <description>Verwaltet offene Schichten, Kontaktversuche, Vermittlung und manuelle Dokumentationsnachweise bürobezogen.</description>
+    <version>0.1.0-dev.1</version>
+    <licence>agpl</licence>
+    <author>Filzmann Software</author>
+    <namespace>FlzAkut</namespace>
+    <category>organization</category>
+    <dependencies><php min-version="8.3"/><nextcloud min-version="33" max-version="35"/></dependencies>
+    <background-jobs><job>OCA\FlzAkut\BackgroundJob\RetentionJob</job></background-jobs>
+    <navigations><navigation><id>flz_akut</id><name>Akutschichtvermittlung</name><route>flz_akut.page.index</route><icon>app.svg</icon><order>45</order></navigation></navigations>
+</info>
