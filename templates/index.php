@@ -3,6 +3,7 @@ script('flz_akut','app');
 style('flz_akut','app');
 ?>
 <main id="flz-akut-app" aria-labelledby="flz-akut-title">
+  <div class="orgsuite-host" data-orgsuite data-suite="flz" data-current-app="flz_akut"></div>
   <header><h1 id="flz-akut-title">Akutschichtvermittlung</h1><p id="flz-akut-status" role="status">Daten werden geladen …</p></header>
   <section aria-labelledby="new-shift-title"><h2 id="new-shift-title">Offene Schicht aufnehmen</h2>
     <form id="flz-akut-create">

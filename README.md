@@ -8,6 +8,10 @@ Lesen, Anlegen, Teilen, Kontaktdokumentation, Vermittlung, Wiederöffnung sowie 
 
 Laufzeitvoraussetzungen sind die getrennten Kategorie-B-Apps LocalBase für Organisation und Feiertage sowie FlzPlaner für ASN-Team, Einzelbüro, Team-AS und Schichtvorlagen. Fehlende oder inkompatible Verträge führen zu einem sichtbaren, nicht berechtigenden Zustand.
 
+LocalBase führt die App als navigierbares Entwicklungsprodukt. Bei aktiver
+OrgSuite erscheint sie im gemeinsamen FLZ-Menü; ohne OrgSuite bleibt der
+eigenständige Einstieg verfügbar. Die Navigation erteilt keine Fachrechte.
+
 ## Entwicklung
 
 ```bash

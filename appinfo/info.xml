@@ -15,5 +15,4 @@
         <admin>OCA\FlzAkut\Settings\Admin</admin>
         <admin-section>OCA\FlzAkut\Settings\AdminSection</admin-section>
     </settings>
-    <navigations><navigation><id>flz_akut</id><name>Akutschichtvermittlung</name><route>flz_akut.page.index</route><icon>app.svg</icon><order>45</order></navigation></navigations>
 </info>

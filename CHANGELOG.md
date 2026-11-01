@@ -7,6 +7,10 @@
   rollenbasierte Nextcloud-Adminoberfläche konfigurierbar gemacht. API,
   Nutzungsoberfläche und PermissionProvider werten jedes Recht unabhängig und
   bei fehlendem Organigrammvertrag fail-closed aus.
+- Lesenden App-Einstieg von der CSRF-Prüfung ausgenommen, während alle
+  Schreibzugriffe tokenpflichtig bleiben, und den wirkungslosen Host für die
+  zentrale OrgSuite-Navigation ergänzt. Der katalogisierte Standalone-Einstieg
+  wird bei aktiver OrgSuite unterdrückt.
 - Initiale Kategorie-B-App für Akutschichtvermittlung angelegt.
 - Öffentliche read-only V1-Consumer für LocalBase und FlzPlaner angebunden.
 - Büroautorisierung, Vermittlungsworkflow, Kontaktverlauf, Dokumentationsmarker, Dringlichkeitsregeln und Retention-Grundvertrag implementiert.
