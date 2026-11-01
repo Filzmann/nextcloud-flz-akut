@@ -10,8 +10,13 @@ namespace OCP {
     interface IAppConfig {
         public function getValueInt(string $appId, string $key, int $default): int;
         public function setValueInt(string $appId, string $key, int $value): void;
+        public function getValueString(string $appId, string $key, string $default): string;
+        public function setValueString(string $appId, string $key, string $value): void;
     }
-    interface IGroupManager { public function getUserGroupIds(object $user): array; }
+    interface IGroupManager {
+        public function get(string $gid): ?object;
+        public function getUserGroupIds(object $user): array;
+    }
     interface IUserSession { public function getUser(): ?object; }
 }
 
@@ -22,6 +27,7 @@ namespace {
     use OCA\FlzAkut\Privacy\AkutProcessingMetadataProvider;
     use OCA\FlzAkut\Privacy\AkutRetentionProvider;
     use OCA\FlzAkut\Service\OrganizationGateway;
+    use OCA\FlzAkut\Service\PermissionSettingsService;
     use OCA\FlzAkut\Service\RetentionSettingsService;
     use OCA\FlzAkut\Tests\Support\InMemoryShiftStore;
     use OCA\FlzDataProtection\PublicApi\V1\DataSubjectRef;
@@ -60,30 +66,46 @@ namespace {
         public function snapshot(): array {
             return [
                 'status' => 'AVAILABLE',
-                'roles' => ['office' => ['groupId' => 'flz-Buero'], 'eb' => ['groupId' => 'flz-EB']],
+                'roles' => [
+                    'office' => ['groupId' => 'flz-Buero', 'label' => 'Büroorganisation'],
+                    'eb' => ['groupId' => 'flz-EB', 'label' => 'Einsatzbegleitung'],
+                    'bl' => ['groupId' => 'flz-BL', 'label' => 'Büroleitung'],
+                    'deputy_bl' => ['groupId' => 'flz-StvBL', 'label' => 'Stellvertretende Büroleitung'],
+                ],
                 'areas' => ['nord' => ['groupId' => 'flz-Nord', 'label' => 'Nord']],
             ];
         }
     };
-    $permissions = (new AkutPermissionProvider($availableGateway))->collect();
-    if (!$permissions->complete() || count($permissions->rules()) !== 5) throw new RuntimeException('Verfügbare Organisation muss vollständige Büroregeln liefern.');
-    foreach (array_slice($permissions->rules(), 0, 4) as $rule) {
+    $config = new class implements \OCP\IAppConfig {
+        public array $values = [];
+        public function getValueInt(string $appId, string $key, int $default): int { return 180; }
+        public function setValueInt(string $appId, string $key, int $value): void {}
+        public function getValueString(string $appId, string $key, string $default): string { return $this->values[$key] ?? $default; }
+        public function setValueString(string $appId, string $key, string $value): void { $this->values[$key] = $value; }
+    };
+    $groups = new class implements \OCP\IGroupManager {
+        public function get(string $gid): ?object { return in_array($gid, ['flz-Buero', 'flz-EB', 'flz-BL', 'flz-StvBL'], true) ? (object)['gid' => $gid] : null; }
+        public function getUserGroupIds(object $user): array { return []; }
+    };
+    $permissionSettings = new PermissionSettingsService($config, $availableGateway, $groups);
+    $permissions = (new AkutPermissionProvider($availableGateway, $permissionSettings))->collect();
+    if (!$permissions->complete() || count($permissions->rules()) !== 10) throw new RuntimeException('Verfügbare Organisation muss acht getrennte Büroregeln und zwei Einstellungsregeln liefern.');
+    foreach (array_slice($permissions->rules(), 0, 8) as $rule) {
         if ($rule->condition()->operator() !== 'all' || count($rule->condition()->children()) !== 2) {
             throw new RuntimeException('Bürorechte müssen Rolle und Bürobereich gemeinsam verlangen.');
+        }
+        if ($rule->condition()->children()[0]->operator() !== 'any' || count($rule->condition()->children()[0]->children()) !== 4) {
+            throw new RuntimeException('Jedes Bürorecht muss die vier bestätigten Defaultrollen alternativ auswerten.');
         }
     }
     $missingGateway = new class extends OrganizationGateway {
         public function __construct() {}
         public function snapshot(): array { return ['status' => 'MISSING', 'roles' => [], 'areas' => []]; }
     };
-    $denied = (new AkutPermissionProvider($missingGateway))->collect();
+    $deniedSettings = new PermissionSettingsService($config, $missingGateway, $groups);
+    $denied = (new AkutPermissionProvider($missingGateway, $deniedSettings))->collect();
     if ($denied->complete() || $denied->rules() !== []) throw new RuntimeException('Fehlende Organisation darf keine Rechte behaupten.');
 
-    $config = new class implements \OCP\IAppConfig {
-        public function getValueInt(string $appId, string $key, int $default): int { return 180; }
-        public function setValueInt(string $appId, string $key, int $value): void {}
-    };
-    $groups = new class implements \OCP\IGroupManager { public function getUserGroupIds(object $user): array { return []; } };
     $session = new class implements \OCP\IUserSession { public function getUser(): ?object { return null; } };
     $retention = new AkutRetentionProvider(new InMemoryShiftStore(), new RetentionSettingsService($config, $groups, $session));
     if ($retention->policies()[0]->durationDays() !== 180) throw new RuntimeException('RetentionProvider muss die App-Einstellung projizieren.');

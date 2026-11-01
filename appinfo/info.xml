@@ -11,5 +11,9 @@
     <category>organization</category>
     <dependencies><php min-version="8.3"/><nextcloud min-version="33" max-version="35"/></dependencies>
     <background-jobs><job>OCA\FlzAkut\BackgroundJob\RetentionJob</job></background-jobs>
+    <settings>
+        <admin>OCA\FlzAkut\Settings\Admin</admin>
+        <admin-section>OCA\FlzAkut\Settings\AdminSection</admin-section>
+    </settings>
     <navigations><navigation><id>flz_akut</id><name>Akutschichtvermittlung</name><route>flz_akut.page.index</route><icon>app.svg</icon><order>45</order></navigation></navigations>
 </info>

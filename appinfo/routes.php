@@ -10,4 +10,5 @@ return ['routes'=>[
  ['name'=>'shift#confirm','url'=>'/api/shifts/{id}/confirm','verb'=>'POST','requirements'=>['id'=>'\\d+']],
  ['name'=>'retention#show','url'=>'/api/privacy/retention','verb'=>'GET'],
  ['name'=>'retention#save','url'=>'/api/privacy/retention','verb'=>'POST'],
+ ['name'=>'permission_settings#save','url'=>'/api/admin/permissions','verb'=>'PUT'],
 ]];
