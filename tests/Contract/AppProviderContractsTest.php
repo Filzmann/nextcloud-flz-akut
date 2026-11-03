@@ -67,12 +67,12 @@ namespace {
             return [
                 'status' => 'AVAILABLE',
                 'roles' => [
-                    'office' => ['groupId' => 'flz-Buero', 'label' => 'Büroorganisation'],
-                    'eb' => ['groupId' => 'flz-EB', 'label' => 'Einsatzbegleitung'],
-                    'bl' => ['groupId' => 'flz-BL', 'label' => 'Büroleitung'],
-                    'deputy_bl' => ['groupId' => 'flz-StvBL', 'label' => 'Stellvertretende Büroleitung'],
+                    'office' => ['groupId' => 'Buero', 'label' => 'Büroorganisation'],
+                    'eb' => ['groupId' => 'EB', 'label' => 'Einsatzbegleitung'],
+                    'bl' => ['groupId' => 'BL', 'label' => 'Büroleitung'],
+                    'deputy_bl' => ['groupId' => 'StvBL', 'label' => 'Stellvertretende Büroleitung'],
                 ],
-                'areas' => ['nord' => ['groupId' => 'flz-Nord', 'label' => 'Nord']],
+                'areas' => ['nord' => ['groupId' => 'Bereich-Nordost', 'label' => 'Nord']],
             ];
         }
     };
@@ -84,7 +84,7 @@ namespace {
         public function setValueString(string $appId, string $key, string $value): void { $this->values[$key] = $value; }
     };
     $groups = new class implements \OCP\IGroupManager {
-        public function get(string $gid): ?object { return in_array($gid, ['flz-Buero', 'flz-EB', 'flz-BL', 'flz-StvBL'], true) ? (object)['gid' => $gid] : null; }
+        public function get(string $gid): ?object { return in_array($gid, ['Buero', 'EB', 'BL', 'StvBL'], true) ? (object)['gid' => $gid] : null; }
         public function getUserGroupIds(object $user): array { return []; }
     };
     $permissionSettings = new PermissionSettingsService($config, $availableGateway, $groups);

@@ -26,12 +26,12 @@ namespace {
     $snapshot = [
         'status' => 'AVAILABLE',
         'roles' => [
-            'office' => ['groupId' => 'flz-BO', 'label' => 'Büroorganisation'],
-            'eb' => ['groupId' => 'flz-EB', 'label' => 'Einsatzbegleitung'],
-            'bl' => ['groupId' => 'flz-BL', 'label' => 'Büroleitung'],
-            'deputy_bl' => ['groupId' => 'flz-StvBL', 'label' => 'Stellvertretende Büroleitung'],
+            'office' => ['groupId' => 'Buero', 'label' => 'Büroorganisation'],
+            'eb' => ['groupId' => 'EB', 'label' => 'Einsatzbegleitung'],
+            'bl' => ['groupId' => 'BL', 'label' => 'Büroleitung'],
+            'deputy_bl' => ['groupId' => 'StvBL', 'label' => 'Stellvertretende Büroleitung'],
         ],
-        'areas' => ['nord' => ['groupId' => 'flz-Nord', 'label' => 'Nord']],
+        'areas' => ['nord' => ['groupId' => 'Bereich-Nordost', 'label' => 'Nord']],
     ];
     $organization = new class($snapshot) extends OrganizationGateway {
         public function __construct(private array $value) {}
@@ -43,8 +43,8 @@ namespace {
         public function setValueString(string $appId, string $key, string $value): void { $this->values[$key] = $value; }
     };
     $groups = new class implements \OCP\IGroupManager {
-        public array $actorGroups = ['flz-BO', 'flz-Nord'];
-        public array $existing = ['flz-BO', 'flz-EB', 'flz-BL', 'flz-StvBL', 'flz-Nord'];
+        public array $actorGroups = ['Buero', 'Bereich-Nordost'];
+        public array $existing = ['Buero', 'EB', 'BL', 'StvBL', 'Bereich-Nordost'];
         public function get(string $gid): ?object { return in_array($gid, $this->existing, true) ? (object)['gid' => $gid] : null; }
         public function getUserGroupIds(object $user): array { return $this->actorGroups; }
     };
@@ -76,17 +76,17 @@ namespace {
         throw new RuntimeException('Abgewiesene Aktion wurde zugelassen.');
     } catch (DomainException) {}
 
-    $groups->actorGroups = ['flz-BL', 'flz-Nord'];
+    $groups->actorGroups = ['BL', 'Bereich-Nordost'];
     if ($access->bureauKeys(AkutCapability::CREATE) !== ['nord']) {
         throw new RuntimeException('BL mit konkreter Anlegeberechtigung muss sein Büro bearbeiten können.');
     }
 
-    $groups->existing = ['flz-BO', 'flz-EB', 'flz-StvBL', 'flz-Nord'];
+    $groups->existing = ['Buero', 'EB', 'StvBL', 'Bereich-Nordost'];
     if ($access->bureauKeys(AkutCapability::CREATE) !== []) {
         throw new RuntimeException('Eine fehlende konfigurierte Rollengruppe muss fail-closed bleiben.');
     }
 
-    $groups->existing[] = 'flz-BL';
+    $groups->existing[] = 'BL';
     $before = $config->values;
     try {
         $settings->update(array_fill_keys(AkutCapability::actionCapabilities(), ['as']));
