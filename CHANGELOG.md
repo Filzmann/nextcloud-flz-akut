@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Browser-/DDEV-Abnahme einschließlich Migration, DI, Hintergrundjob, CSRF und Rollenmatrix abgeschlossen.
 - Acht bürobezogene Akutberechtigungen getrennt, standardmäßig BO, EB,
   Büroleitung und Stellvertretender Büroleitung zugeordnet und über eine
   rollenbasierte Nextcloud-Adminoberfläche konfigurierbar gemacht. API,
