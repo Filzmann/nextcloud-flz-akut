@@ -81,7 +81,8 @@ final class PermissionSettingsService {
     public function selection(): array {
         $snapshot = $this->organization->snapshot();
         if (($snapshot['status'] ?? null) !== 'AVAILABLE' || !is_array($snapshot['roles'] ?? null)) {
-            return ['available' => false, 'complete' => false, 'message' => 'Das LocalBase-Organigramm ist nicht verfügbar. Akutberechtigungen bleiben deaktiviert.', 'options' => []];
+            $source = $snapshot['source'] ?? 'Organisationsvertrag';
+            return ['available' => false, 'complete' => false, 'message' => "Der $source ist nicht verfügbar. Akutberechtigungen bleiben deaktiviert.", 'options' => []];
         }
         $options = [];
         foreach (self::ASSIGNABLE_ROLE_KEYS as $roleKey) {
