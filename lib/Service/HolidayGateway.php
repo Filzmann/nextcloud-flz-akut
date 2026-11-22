@@ -4,106 +4,98 @@ declare(strict_types=1);
 
 namespace OCA\FlzAkut\Service;
 
+use OCA\FlzOrganization\PublicApi\V1\Contract;
+use OCA\FlzOrganization\PublicApi\V1\HolidayCalendarProvider;
 use OCP\App\IAppManager;
 use OCP\Server;
+use Psr\Log\LoggerInterface;
+use Throwable;
 
-/**
- * Gateway für Feiertagsdaten.
- * 
- * Priorität:
- * 1. flz_organization (neue kanonische Quelle für Kalenderkontext und Feiertage)
- * 2. localbase (historischer Fallback für Kompatibilität)
- */
-final class HolidayGateway {
-    private const FLZ_ORGANIZATION_CLASS = 'OCA\\FlzOrganization\\PublicApi\\V1\\HolidayCalendarProvider';
-    private const LOCALBASE_CLASS = 'OCA\\LocalBase\\PublicApi\\V1\\HolidayCalendarProvider';
-
-    public function __construct(private IAppManager $apps) {}
-
-    /**
-     * Liefert Feiertage für ein bestimmtes Jahr.
-     * 
-     * @param int $year Das Jahr
-     * @return array{status: string, dates: array, timezone: string|null, cacheStatus?: string}
-     */
-    public function year(int $year): array {
-        // 1. Versuche flz_organization (neue kanonische Quelle)
-        $flzOrgResult = $this->tryFlzOrganization($year);
-        if ($flzOrgResult['status'] === 'AVAILABLE') {
-            return $flzOrgResult;
-        }
-
-        // 2. Fallback zu localbase (historische Kompatibilität)
-        return $this->tryLocalBase($year);
+/** Keeps unavailable canonical holiday data visibly unavailable. */
+final class HolidayGateway
+{
+    public function __construct(
+        private IAppManager $apps,
+        private LoggerInterface $logger,
+    )
+    {
     }
 
-    /**
-     * Versucht, Feiertage von flz_organization zu holen.
-     * 
-     * @param int $year Das Jahr
-     * @return array{status: string, dates: array, timezone: string|null, cacheStatus?: string}
-     */
-    private function tryFlzOrganization(int $year): array {
-        if (!in_array('flz_organization', $this->apps->getEnabledApps(), true)) {
-            return ['status' => 'MISSING', 'dates' => [], 'timezone' => null];
+    /** @return array{status:string,dates:array,timezone:?string,cacheStatus?:string,source?:string} */
+    public function year(int $year): array
+    {
+        if (!in_array('flz_organization', $this->apps->getEnabledApps(), true))
+        {
+            return $this->unavailable('MISSING');
         }
 
-        if (!class_exists(self::FLZ_ORGANIZATION_CLASS)) {
-            return ['status' => 'INCOMPATIBLE', 'dates' => [], 'timezone' => null];
-        }
-
-        try {
-            $provider = Server::get(self::FLZ_ORGANIZATION_CLASS);
-            $snapshot = $provider->calendar($year);
-            
-            if ($snapshot->contractVersion() !== '1.0' || !$snapshot->isUsable()) {
-                return ['status' => 'UNAVAILABLE', 'dates' => [], 'timezone' => $snapshot->timezone()];
+        try
+        {
+            if (!class_exists(Contract::class)
+                || !method_exists(Contract::class, 'supports')
+                || !Contract::supports('1.0')
+                || !class_exists(HolidayCalendarProvider::class))
+            {
+                return $this->unavailable('INCOMPATIBLE');
             }
-
+            $provider = Server::get(HolidayCalendarProvider::class);
+            if (!$provider instanceof HolidayCalendarProvider)
+            {
+                return $this->unavailable('INCOMPATIBLE');
+            }
+            $snapshot = $provider->calendar($year);
+            foreach (['contractVersion', 'isUsable', 'timezone', 'publicHolidayDates', 'cacheStatus'] as $method)
+            {
+                if (!method_exists($snapshot, $method))
+                {
+                    return $this->unavailable('INCOMPATIBLE');
+                }
+            }
+            if ($snapshot->contractVersion() !== '1.0')
+            {
+                return $this->unavailable('INCOMPATIBLE');
+            }
+            $timezone = $snapshot->timezone();
+            if (!is_string($timezone) || $timezone === '')
+            {
+                return $this->unavailable('INCOMPATIBLE');
+            }
+            if ($snapshot->isUsable() !== true)
+            {
+                return $this->unavailable('UNAVAILABLE', $timezone);
+            }
+            $dates = $snapshot->publicHolidayDates();
+            $cacheStatus = $snapshot->cacheStatus();
+            if (!is_array($dates) || !in_array($cacheStatus, ['fresh', 'current', 'stale'], true))
+            {
+                return $this->unavailable('INCOMPATIBLE');
+            }
             return [
                 'status' => 'AVAILABLE',
-                'dates' => $snapshot->publicHolidayDates(),
-                'timezone' => $snapshot->timezone(),
-                'cacheStatus' => $snapshot->cacheStatus(),
-                'source' => 'flz_organization'
+                'dates' => $dates,
+                'timezone' => $timezone,
+                'cacheStatus' => $cacheStatus,
+                'source' => 'flz_organization',
             ];
-        } catch (\Throwable $e) {
-            return ['status' => 'UNAVAILABLE', 'dates' => [], 'timezone' => null];
+        }
+        catch (Throwable $error)
+        {
+            $this->logger->warning('Akut holiday provider unavailable', [
+                'app' => 'flz_akut',
+                'provider' => 'flz_organization',
+                'exception_class' => $error::class,
+            ]);
+            return $this->unavailable('UNAVAILABLE');
         }
     }
 
-    /**
-     * Versucht, Feiertage von localbase zu holen (Fallback).
-     * 
-     * @param int $year Das Jahr
-     * @return array{status: string, dates: array, timezone: string|null, cacheStatus?: string}
-     */
-    private function tryLocalBase(int $year): array {
-        if (!in_array('localbase', $this->apps->getEnabledApps(), true)) {
-            return ['status' => 'MISSING', 'dates' => [], 'timezone' => null];
-        }
-
-        if (!class_exists(self::LOCALBASE_CLASS)) {
-            return ['status' => 'INCOMPATIBLE', 'dates' => [], 'timezone' => null];
-        }
-
-        try {
-            $provider = Server::get(self::LOCALBASE_CLASS);
-            $snapshot = $provider->calendar($year);
-            
-            if ($snapshot->contractVersion() !== '1.0' || !$snapshot->isUsable()) {
-                return ['status' => 'UNAVAILABLE', 'dates' => [], 'timezone' => $snapshot->timezone()];
-            }
-
-            return [
-                'status' => 'AVAILABLE',
-                'dates' => $snapshot->publicHolidayDates(),
-                'timezone' => $snapshot->timezone(),
-                'cacheStatus' => $snapshot->cacheStatus(),
-                'source' => 'localbase'
-            ];
-        } catch (\Throwable $e) {
-            return ['status' => 'UNAVAILABLE', 'dates' => [], 'timezone' => null];
-        }
+    /** @return array{status:string,dates:array,timezone:?string} */
+    private function unavailable(string $status, ?string $timezone = null): array
+    {
+        return [
+            'status' => $status,
+            'dates' => [],
+            'timezone' => $timezone,
+        ];
     }
 }

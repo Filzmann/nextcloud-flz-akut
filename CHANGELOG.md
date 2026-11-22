@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Integration mit flz_organization als primäre Quelle für Organisations- und Feiertagsdaten vorbereitet. Die Gateways nutzen flz_organization zuerst und fallen bei Nichtverfügbarkeit auf LocalBase zurück.
+- Organisation und Feiertage ausschließlich an den öffentlichen flz_organization-V1-Vertrag gebunden. Aktivierungs-/Versionsprüfung, datensparsame Fehlerdiagnose und negative Gatewaytests verhindern den bisherigen LocalBase-Fallback auch bei fehlerhaftem kanonischen Provider.
 - Browser-/DDEV-Abnahme einschließlich Migration, DI, Hintergrundjob, CSRF und Rollenmatrix abgeschlossen.
 - Acht bürobezogene Akutberechtigungen getrennt, standardmäßig BO, EB,
   Büroleitung und Stellvertretender Büroleitung zugeordnet und über eine

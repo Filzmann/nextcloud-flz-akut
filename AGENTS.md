@@ -9,11 +9,11 @@ diese Datei, `.agents/skills/work-in-nextcloud-app/SKILL.md`, bei
 Verhaltensänderungen zusätzlich `.agents/skills/test-driven-change/SKILL.md`,
 und `git status --short` vollständig zu lesen.
 
-Die App ist Kategorie B mit begründeten, versionierten read-only Laufzeitabhängigkeiten zu LocalBase und FlzPlaner. Fehlende, deaktivierte oder inkompatible Provider bleiben sichtbar und erteilen keine Rechte. Direkte Fremdtabellen-, private AppConfig-, interne Klassen-, Controller-, Asset- oder Dateipfadzugriffe sind verboten.
+Die App ist Kategorie B mit begründeten, versionierten read-only Laufzeitabhängigkeiten zu flz_organization und FlzPlaner. Fehlende, deaktivierte oder inkompatible Provider bleiben sichtbar und erteilen keine Rechte. Direkte Fremdtabellen-, private AppConfig-, interne Klassen-, Controller-, Asset- oder Dateipfadzugriffe sind verboten.
 
 ## Fach- und Sicherheitsvertrag
 
-- BO und EB arbeiten ausschließlich in ihren aktuellen LocalBase-Bürobereichen; Mehrbüro-Mitgliedschaften werden additiv gelesen.
+- BO und EB arbeiten ausschließlich in ihren aktuellen flz_organization-Bürobereichen; Mehrbüro-Mitgliedschaften werden additiv gelesen.
 - BO-/EB-Büro-Zuordnungen werden nur in der zentralen FLZ-Organisationsverwaltung verändert.
 - FlzPlaner besitzt Teamcode, genau einen Bürobereich je ASN-Team, Team-AS und Schichtvorlagen. AS besitzen keine Bürozuordnung; Kandidateneignung folgt ausschließlich der ASN-Teammitgliedschaft.
 - Controller bleiben dünn. Autorisierung erfolgt serverseitig vor jedem Lesen und Schreiben. Schreibende Requests bleiben CSRF-geschützt.
