@@ -8,6 +8,9 @@ on:
 permissions:
   contents: read
 
+env:
+  LOCALBASE_TEST_REF: 18a934da06b30e342ccc81ab4b7912a9fb8ba5c8
+
 concurrency:
   group: tests-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -30,7 +33,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: Filzmann/nextcloud-localbase
-          ref: main
+          ref: ${{ env.LOCALBASE_TEST_REF }}
           path: localbase
       - name: Datenschutzvertrag auschecken
         uses: actions/checkout@v7
@@ -80,7 +83,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: Filzmann/nextcloud-localbase
-          ref: main
+          ref: ${{ env.LOCALBASE_TEST_REF }}
           path: localbase
       - name: Node.js einrichten
         uses: actions/setup-node@v6

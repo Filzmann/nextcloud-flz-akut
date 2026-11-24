@@ -9,6 +9,7 @@ spl_autoload_register(static function (string $class) use ($appRoot, $workspaceR
     $prefixes = [
         'OCA\\FlzAkut\\Tests\\' => $appRoot . '/tests/',
         'OCA\\FlzAkut\\' => $appRoot . '/lib/',
+        'OCA\\LocalBase\\Tests\\' => $workspaceRoot . '/localbase/tests/',
         'OCA\\FlzDataProtection\\' => $workspaceRoot . '/flz_data_protection/lib/',
         'OCA\\FlzPermissionMatrix\\' => $workspaceRoot . '/flz_permission_matrix/lib/',
         'OCA\\LocalBase\\' => $workspaceRoot . '/localbase/lib/',

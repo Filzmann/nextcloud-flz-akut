@@ -5,4 +5,5 @@ for(const file of files){const check=spawnSync(process.execPath,['--check',new U
 await import('./js-smoke.mjs')
 await import('./admin-settings-smoke.mjs')
 await import('./permission-ui-smoke.mjs')
+await import('./runtime-behavior.mjs')
 console.log('flz_akut JavaScript tests passed')
