@@ -1,6 +1,7 @@
 <?php
 return ['routes'=>[
  ['name'=>'page#index','url'=>'/','verb'=>'GET'],
+ ['name'=>'page#search','url'=>'/suchbogen','verb'=>'GET'],
  ['name'=>'shift#state','url'=>'/api/state','verb'=>'GET'],
  ['name'=>'shift#create','url'=>'/api/shifts','verb'=>'POST'],
  ['name'=>'shift#split','url'=>'/api/shifts/{id}/split','verb'=>'POST','requirements'=>['id'=>'\\d+']],

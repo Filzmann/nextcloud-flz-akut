@@ -56,7 +56,12 @@
     const fmtTime = value => { const date = new Date(value); return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'}) }
 
     function render() {
-        if (!rowsBody.innerHTML) renderRows([{}])
+        if (rowsBody && !rowsBody.innerHTML) renderRows([{}])
+        if (!body) {
+            const params = new URLSearchParams(location.search)
+            if (params.get('team')) renderSearch(params.get('team'))
+            return
+        }
         const groups = [...state.teams]
         for (const shift of state.shifts) if (!groups.some(item => item.teamCode === shift.team_code)) groups.push({teamCode: shift.team_code, displayName: shift.team_code, bureauKey: shift.bureau_key, assistants: []})
         groups.sort((a, b) => a.displayName.localeCompare(b.displayName, 'de'))
@@ -85,8 +90,8 @@
 
     function renderSearch(code) {
         const selectedTeam = team(code)
-        if (!selectedTeam) return
         const section = document.getElementById('flz-akut-search-sheet')
+        if (!selectedTeam || !section) return
         section.hidden = false
         document.getElementById('search-sheet-title').textContent = 'Suchbogen ' + selectedTeam.displayName
         const shifts = state.shifts.filter(shift => shift.team_code === code && shift.state === 'open')
@@ -103,7 +108,7 @@
         } catch (error) { status.textContent = error.message }
     }
 
-    form.addEventListener('submit', async event => {
+    if (form) form.addEventListener('submit', async event => {
         event.preventDefault()
         const entries = []
         for (const row of Array.from(rowsBody.querySelectorAll('tr'))) {
@@ -177,7 +182,7 @@
         }
         const button = event.target.closest('button[data-action]')
         if (!button) return
-        if (button.dataset.action === 'search') { renderSearch(button.dataset.team); return }
+        if (button.dataset.action === 'search') { window.open(OC.generateUrl('/apps/flz_akut/suchbogen?team=' + encodeURIComponent(button.dataset.team)), '_blank', 'noopener'); return }
         const id = Number(button.dataset.id)
         if (button.dataset.action === 'split' || button.dataset.action === 'accept' || button.dataset.action === 'contact') { openActionDialog(button.dataset.action, id, button.dataset.uid); return }
         try {

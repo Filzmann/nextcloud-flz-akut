@@ -18,6 +18,7 @@
 - [ ] Nur `Datenschutzbeauftragte` können 30 bis 365 Tage konfigurieren.
 - [ ] Abgelaufene Fälle, Kontakte und Auditdaten werden gemeinsam gelöscht.
 - [ ] Die Übersicht gruppiert alphabetisch nach ASN (Gruppenzeile mit „Suchbogen öffnen“); Schichtzeilen zeigen dd.mm, Von, Bis sowie AS und Aktionen.
+- [ ] Die App nutzt die komplette Fensterbreite; „Suchbogen öffnen“ legt die Suchbogen-Seite in einem neuen Browser-Tab an (dort ohne Schichttabelle, mit Kontaktversuchen).
 - [ ] Tastatur, Fokus, responsives Layout, vertikaler App-Scroll und horizontaler Tabellenscroll sind geprüft.
 
 ## Automatischer Gateway-Nachweis

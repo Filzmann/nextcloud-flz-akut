@@ -91,7 +91,7 @@ try {
     await cdp.call('Network.enable');
     await cdp.call('Emulation.setDeviceMetricsOverride', { width: 1200, height: 800, deviceScaleFactor: 1, mobile: false });
     await cdp.call('Page.addScriptToEvaluateOnNewDocument', {
-        source: `window.__akutBrowserErrors = []; window.addEventListener('error', event => window.__akutBrowserErrors.push(String(event.error || event.message))); window.addEventListener('unhandledrejection', event => window.__akutBrowserErrors.push(String(event.reason)));`,
+        source: `window.__akutBrowserErrors = []; window.addEventListener('error', event => window.__akutBrowserErrors.push(String(event.error || event.message))); window.addEventListener('unhandledrejection', event => window.__akutBrowserErrors.push(String(event.reason))); window.__openedUrls = []; window.open = url => { window.__openedUrls.push(String(url)); return null; };`,
     });
 
     await cdp.call('Network.clearBrowserCookies');
@@ -114,6 +114,10 @@ try {
     await cdp.call('Page.navigate', { url: `${baseUrl}/index.php/apps/flz_akut/?browser-smoke=${Date.now()}` });
     await waitFor(`document.readyState === 'complete' && document.getElementById('flz-akut-app')`, 'App-Dokument');
     await waitFor(`document.getElementById('flz-akut-status')?.textContent === 'Bereit.'`, 'geladener App-Zustand');
+    {
+        const width = await evaluate(`(() => { const app = document.getElementById('flz-akut-app'); const content = document.getElementById('content'); return {app: Math.round(app.getBoundingClientRect().width), content: content ? content.clientWidth : 0}; })()`);
+        assert.ok(width.app >= width.content * 0.95, `App-Root muss die volle Fensterbreite nutzen (${width.app} < 95% von ${width.content})`);
+    }
 
     assert.equal(await evaluate(`Boolean(document.getElementById('flz-akut-open-create'))`), true, 'Der "+ Neue Lücke"-Button fehlt.');
     assert.equal(await evaluate(`document.getElementById('flz-akut-create-dialog')?.tagName`), 'DIALOG', 'Das Lücke-Formular muss ein Dialog-Overlay sein.');
@@ -129,6 +133,15 @@ try {
         assert.ok(layout.tableWidth >= layout.dialogWidth * 0.9, `Tabelle muss die volle Overlay-Breite nutzen (${layout.tableWidth} < 90% von ${layout.dialogWidth})`);
         assert.equal(layout.titleBelowTable, true, 'Überschrift muss über der Tabelle stehen, nicht daneben.');
         assert.equal(layout.hint, false, 'Der Hint-Satz darf nicht mehr im Overlay stehen.');
+        const controls = await evaluate(`(() => { const row = document.querySelector('#flz-akut-create-rows tr'); const rect = el => { const r = el.getBoundingClientRect(); return {top: Math.round(r.top), width: Math.round(r.width)} }; return {buttons: ['#flz-akut-add-row', '#flz-akut-create button[type=submit]', '#flz-akut-close-create'].map(s => rect(document.querySelector(s))), date: rect(row.querySelector('[name=date]')), time: rect(row.querySelector('[name=startTime]'))}; })()`);
+        const tops = controls.buttons.map(button => button.top);
+        assert.ok(Math.max(...tops) - Math.min(...tops) <= 1, `Buttons müssen nebeneinander liegen (tops: ${tops})`);
+        assert.ok(controls.date.width <= 150, `Datumsfeld muss schmal bleiben (${controls.date.width}px)`);
+        assert.ok(controls.time.width <= 100, `Zeitfeld muss schmal bleiben (${controls.time.width}px)`);
+        const gaps = await evaluate(`(() => { const row = document.querySelector('#flz-akut-create-rows tr'); const inputs = Array.from(row.querySelectorAll('input,select')); const rects = inputs.map(el => el.getBoundingClientRect()); return rects.slice(1).map((r, i) => Math.round(r.left - rects[i].right)); })()`);
+        assert.ok(gaps.every(gap => gap <= 16), `Zwischen den Feldern darf kaum Leerraum bleiben (gaps: ${gaps})`);
+        const scroll = await evaluate(`(() => { const wrap = document.querySelector('#flz-akut-create .table-scroll'); return {scrollWidth: wrap.scrollWidth, clientWidth: wrap.clientWidth}; })()`);
+        assert.ok(scroll.scrollWidth <= scroll.clientWidth + 1, `Kein horizontaler Scrollbalken unter der Tabelle (scrollWidth ${scroll.scrollWidth} > clientWidth ${scroll.clientWidth})`);
     }
 
     if (screenshotPath) {
@@ -184,7 +197,16 @@ try {
         const names = groups.map(group => group.name);
         assert.deepEqual(names, [...names].sort((a, b) => a.localeCompare(b, 'de')), 'ASN-Gruppen müssen alphabetisch sortiert sein.');
         await evaluate(`document.querySelector('#flz-akut-shifts button[data-action="search"]').click()`);
-        await waitFor(`document.getElementById('flz-akut-search-sheet') && !document.getElementById('flz-akut-search-sheet').hidden`, 'Suchbogen öffnet über Gruppen-Button');
+        await waitFor(`(window.__openedUrls || []).some(url => url.includes('/suchbogen?team='))`, 'Suchbogen öffnet im neuen Tab');
+        assert.equal(await evaluate(`Boolean(document.getElementById('flz-akut-search-sheet'))`), false, 'Die Hauptseite darf keinen Suchbogen mehr enthalten.');
+        const searchPath = await evaluate(`window.__openedUrls.find(url => url.includes('/suchbogen?team='))`);
+        await cdp.call('Page.navigate', { url: new URL(searchPath, baseUrl).href });
+        await waitFor(`document.readyState === 'complete' && document.getElementById('flz-akut-search-sheet')`, 'Suchbogen-Seite');
+        assert.equal(await evaluate(`Boolean(document.getElementById('flz-akut-shifts'))`), false, 'Die Suchbogen-Seite darf keine Schichttabelle zeigen.');
+        assert.equal(await evaluate(`document.getElementById('flz-akut-search-sheet').hidden`), false, 'Suchbogen muss auf seiner Seite sichtbar sein.');
+        assert.ok(await evaluate(`document.getElementById('flz-akut-search-body').textContent.length > 0`), 'Suchbogen muss Zeilen rendern.');
+        await cdp.call('Page.navigate', { url: `${baseUrl}/index.php/apps/flz_akut/?browser-smoke=${Date.now()}` });
+        await waitFor(`document.getElementById('flz-akut-status')?.textContent === 'Bereit.'`, 'Zurück zur Hauptseite');
     }
 
     await evaluate(`document.querySelector('button[data-action="split"][data-id="${created.id}"]').click()`);

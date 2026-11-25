@@ -15,4 +15,6 @@ final class PageController extends Controller {
     public function __construct(IRequest $request){parent::__construct(Application::APP_ID,$request);}
     #[NoAdminRequired, NoCSRFRequired]
     public function index():TemplateResponse{return new TemplateResponse(Application::APP_ID,'index');}
+    #[NoAdminRequired, NoCSRFRequired]
+    public function search():TemplateResponse{return new TemplateResponse(Application::APP_ID,'search');}
 }

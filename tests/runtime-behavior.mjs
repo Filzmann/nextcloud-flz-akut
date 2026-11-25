@@ -39,7 +39,8 @@ async function appScenario() {
     let actionValues = {}
     const state = {ok: true, providerStatus: 'AVAILABLE', teams: [{teamCode: 'T1', bureauKey: 'west', displayName: '<Team>', assistants: [{uid: 'as1', displayName: 'A & B'}]}, {teamCode: 'T2', bureauKey: 'east', displayName: 'Other', assistants: []}], permissions: {create: ['west'], split: ['west'], assign: ['west'], contact: ['west'], reopen: ['west'], confirmHycare: ['west'], confirmPaper: ['west']}, shifts: [{id: 1, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: 'sz', starts_at: '2026-01-01T10:00:00Z', ends_at: '2026-01-01T12:00:00Z'}, {id: 2, team_code: 'T2', bureau_key: 'east', state: 'mediated', urgency: 'week', starts_at: 'start', ends_at: 'end', assigned_uid: '<uid>'}, {id: 3, team_code: 'T1', bureau_key: 'west', state: 'mediated', urgency: 'unavailable', starts_at: 'start', ends_at: 'end', hycare_at: 'yes', paper_at: 'yes'}]}
     let failure = null
-    const context = {document: {getElementById: id => nodes[id]}, location: {search: '?team=T1'}, URLSearchParams, Date, OC: {requestToken: 'synthetic-token', generateUrl: path => path}, FormData: class {constructor(f) { this.form = f } get(name) { return actionValues[name] }}, fetch: async (url, options) => { calls.push({url, options}); if (failure) return response({ok: false, error: failure}, false); return response(url.endsWith('/api/state') ? state : {ok: true}) }}
+    const openedUrls = []
+    const context = {document: {getElementById: id => nodes[id]}, location: {search: ''}, URLSearchParams, Date, OC: {requestToken: 'synthetic-token', generateUrl: path => path}, window: {open: url => { openedUrls.push(url); return null }}, FormData: class {constructor(f) { this.form = f } get(name) { return actionValues[name] }}, fetch: async (url, options) => { calls.push({url, options}); if (failure) return response({ok: false, error: failure}, false); return response(url.endsWith('/api/state') ? state : {ok: true}) }}
     const path = fileURLToPath(new URL('../js/app.js', import.meta.url))
     vm.runInNewContext(fs.readFileSync(path, 'utf8'), context, {filename: path})
     await tick()
@@ -55,12 +56,9 @@ async function appScenario() {
     assert.match(body.innerHTML, /data-action="search" data-team="T1"/)
     assert.match(body.innerHTML, /\d{2}\.\d{2}/)
     assert.match(body.innerHTML, /\d{2}:\d{2}/)
-    assert.equal(search.hidden, false)
-    assert.equal(title.textContent, 'Suchbogen <Team>')
-    assert.match(searchBody.innerHTML, /A &amp; B/)
-    await root.handlers.click({target: {closest: selector => selector === 'button[data-action]' ? {dataset: {action: 'search', team: 'T2'}} : null}})
-    assert.equal(title.textContent, 'Suchbogen Other')
     assert.equal(calls[0].options.headers.requesttoken, 'synthetic-token')
+    await root.handlers.click({target: {closest: selector => selector === 'button[data-action]' ? {dataset: {action: 'search', team: 'T1'}} : null}})
+    assert.ok(openedUrls.some(url => url.includes('/suchbogen?team=T1')), 'Suchbogen muss im neuen Tab geöffnet werden.')
     await root.handlers.click({target: {closest: selector => selector === '#flz-akut-open-create' ? openButton : null}})
     assert.equal(modalShown, 1)
     await root.handlers.click({target: {closest: selector => selector === '#flz-akut-close-create' ? closeButton : null}})
@@ -111,6 +109,35 @@ async function appScenario() {
     await root.handlers.click({target: {closest: () => null}})
 }
 
+async function searchScenario() {
+    const root = node(), status = node()
+    const search = node(), title = node(), searchHead = node(), searchBody = node()
+    const actionDialog = node(), actionForm = node(), actionTitle = node(), actionFields = node(), actionClose = node()
+    let actionShown = 0
+    actionDialog.showModal = () => { actionShown++ }
+    actionDialog.close = () => {}
+    actionForm.id = 'flz-akut-action-form'
+    actionForm.elements = {}
+    actionForm.reset = () => {}
+    const nodes = {'flz-akut-app': root, 'flz-akut-status': status, 'flz-akut-search-sheet': search, 'search-sheet-title': title, 'flz-akut-search-head': searchHead, 'flz-akut-search-body': searchBody, 'flz-akut-action-dialog': actionDialog, 'flz-akut-action-form': actionForm, 'flz-akut-action-title': actionTitle, 'flz-akut-action-fields': actionFields, 'flz-akut-action-close': actionClose}
+    const calls = []
+    let actionValues = {}
+    const state = {ok: true, providerStatus: 'AVAILABLE', teams: [{teamCode: 'T1', bureauKey: 'west', displayName: '<Team>', assistants: [{uid: 'as1', displayName: 'A & B'}]}], permissions: {contact: ['west']}, shifts: [{id: 1, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: 'sz', starts_at: '2026-01-01T10:00:00Z', ends_at: '2026-01-01T12:00:00Z'}]}
+    const context = {document: {getElementById: id => nodes[id]}, location: {search: '?team=T1'}, URLSearchParams, Date, OC: {requestToken: 'synthetic-token', generateUrl: path => path}, window: {open: () => null}, FormData: class {get(name) { return actionValues[name] }}, fetch: async (url, options) => { calls.push({url, options}); return response(url.endsWith('/api/state') ? state : {ok: true}) }}
+    const path = fileURLToPath(new URL('../js/app.js', import.meta.url))
+    vm.runInNewContext(fs.readFileSync(path, 'utf8'), context, {filename: path})
+    await tick()
+    assert.equal(title.textContent, 'Suchbogen <Team>')
+    assert.equal(search.hidden, false)
+    assert.match(searchBody.innerHTML, /A &amp; B/)
+    assert.equal(nodes['flz-akut-shifts'], undefined)
+    await root.handlers.click({target: {closest: selector => selector === 'button[data-action]' ? {dataset: {action: 'contact', id: '1', uid: 'as1'}} : null}})
+    assert.equal(actionShown, 1)
+    actionValues = {channel: 'sms', outcome: 'open', note: ''}
+    await actionForm.handlers.submit({preventDefault() {}})
+    assert.ok(calls.some(call => call.url.endsWith('/contacts')), 'Kontaktversuch auf der Suchbogen-Seite fehlt.')
+}
+
 async function adminScenario() {
     const form = node(), status = node(), document = {handler: null, addEventListener(type, fn) { this.handler = fn }, getElementById(id) { return id.endsWith('-status') ? status : form }}
     const calls = []; let result = response({ok: true})
@@ -129,5 +156,6 @@ async function adminScenario() {
 }
 
 await appScenario()
+await searchScenario()
 await adminScenario()
 console.log('flz_akut JavaScript runtime behavior passed')
