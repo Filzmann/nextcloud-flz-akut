@@ -7,7 +7,8 @@
 - [ ] Eine fachlich berechtigte Person mit fremdem Bürobereich kann einen Fall weder lesen noch verändern.
 - [ ] Fehlende flz_organization-Verträge, Rollen oder Nextcloud-Gruppen führen sichtbar und serverseitig zum Rechteentzug.
 - [ ] Ausschließlich aktive Mitglieder des ASN-Teams sind als AS auswählbar; für AS wird keine Bürozuordnung vorausgesetzt oder ausgewertet.
-- [ ] „+ Neue Lücke“ öffnet ein Overlay-Formular mit ASN-Auswahl, einem Datumsfeld und zwei Zeitfeldern; das Absenden schließt das Overlay wieder.
+- [ ] „+ Neue Lücke“ öffnet ein Overlay mit editierbarer Tabelle (ASN, Datum, Von, Bis, Kommentar je Zeile); „+ Zeile hinzufügen“ übernimmt die Werte der Vorzeile; geschlossene Overlays überlagern den Inhalt nicht.
+- [ ] Teilen, AS eintragen und Kontaktversuch arbeiten ohne Browser-Prompts über eigene Dialoge; Tastaturbedienung und Fokus sind geprüft.
 - [ ] Liegt „Bis“ vor „Von“, endet die Nachtschicht am nächsten Tag; gleiche Start- und Endzeit wird mit Fehler abgelehnt.
 - [ ] Schichtvorschlag kann übernommen und danach verändert werden.
 - [ ] Eine Schicht kann an beliebigen inneren Zeitpunkten lückenfrei geteilt werden; der Ursprung bleibt unvermittelbar.
@@ -16,6 +17,7 @@
 - [ ] Freitag, Wochenende und Feiertag ergeben den nächsten Büroarbeitstag korrekt; fehlende Feiertage zeigen keine falsche SZ-Aussage.
 - [ ] Nur `Datenschutzbeauftragte` können 30 bis 365 Tage konfigurieren.
 - [ ] Abgelaufene Fälle, Kontakte und Auditdaten werden gemeinsam gelöscht.
+- [ ] Die Übersicht gruppiert alphabetisch nach ASN (Gruppenzeile mit „Suchbogen öffnen“); Schichtzeilen zeigen dd.mm, Von, Bis sowie AS und Aktionen.
 - [ ] Tastatur, Fokus, responsives Layout, vertikaler App-Scroll und horizontaler Tabellenscroll sind geprüft.
 
 ## Automatischer Gateway-Nachweis

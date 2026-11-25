@@ -7,17 +7,21 @@ style('flz_akut','app');
   <header><h1 id="flz-akut-title">Akutschichtvermittlung</h1><button type="button" id="flz-akut-open-create" aria-haspopup="dialog">+ Neue Lücke</button><p id="flz-akut-status" role="status">Daten werden geladen …</p></header>
   <dialog id="flz-akut-create-dialog" aria-labelledby="new-shift-title">
     <form id="flz-akut-create">
-      <h2 id="new-shift-title">Offene Schicht aufnehmen</h2>
-      <label>ASN-Team <select name="teamCode" required></select></label>
-      <label>Datum <input name="date" type="date" required></label>
-      <label>Von <input name="startTime" type="time" required></label>
-      <label>Bis <input name="endTime" type="time" required></label>
-      <p class="hint">Liegt „Bis“ vor „Von“, handelt es sich um eine Nachtschicht, die am nächsten Tag endet.</p>
-      <label>Kommentar <textarea name="comment" rows="2"></textarea></label>
-      <button type="submit">Schicht aufnehmen</button>
+      <h2 id="new-shift-title">Offene Schichten aufnehmen</h2>
+      <div class="table-scroll"><table id="flz-akut-create-table"><thead><tr><th>ASN-Team</th><th>Datum</th><th>Von</th><th>Bis</th><th>Kommentar</th><th><span class="hidden-visually">Zeile entfernen</span></th></tr></thead><tbody id="flz-akut-create-rows"></tbody></table></div>
+      <button type="button" id="flz-akut-add-row">+ Zeile hinzufügen</button>
+      <button type="submit">Schichten aufnehmen</button>
       <button type="button" id="flz-akut-close-create">Schließen</button>
     </form>
   </dialog>
-  <section aria-labelledby="open-shifts-title"><h2 id="open-shifts-title">Offene und vermittelte Schichten</h2><div class="table-scroll"><table><thead><tr><th>ASN</th><th>Datum / Uhrzeit</th><th>Assistenz</th><th>Status</th><th>Dokumentation</th><th>Suchbogen</th></tr></thead><tbody id="flz-akut-shifts"></tbody></table></div></section>
+  <dialog id="flz-akut-action-dialog" aria-labelledby="flz-akut-action-title">
+    <form id="flz-akut-action-form">
+      <h2 id="flz-akut-action-title"></h2>
+      <div id="flz-akut-action-fields"></div>
+      <button type="submit">Speichern</button>
+      <button type="button" id="flz-akut-action-close">Abbrechen</button>
+    </form>
+  </dialog>
+  <section aria-labelledby="open-shifts-title"><h2 id="open-shifts-title">Offene und vermittelte Schichten</h2><div class="table-scroll"><table><thead><tr><th>Datum</th><th>Von</th><th>Bis</th><th>AS / Aktionen</th></tr></thead><tbody id="flz-akut-shifts"></tbody></table></div></section>
   <section id="flz-akut-search-sheet" hidden aria-labelledby="search-sheet-title"><h2 id="search-sheet-title">Suchbogen</h2><p>Kontaktversuche werden mehrzeilig je Assistenz und Schicht geführt.</p><div class="table-scroll"><table><thead id="flz-akut-search-head"></thead><tbody id="flz-akut-search-body"></tbody></table></div></section>
 </main>

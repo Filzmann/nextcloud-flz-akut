@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-- Opt-in DDEV-Browser-Smoke (`tests/browser-ddev-smoke.sh`, headless Chrome via CDP) prüft E2E: Login, Overlay per „+ Neue Lücke“, Datums-/Zeitfelder, Nachtschicht endet am nächsten Tag, Negativfall gleiche Zeiten, kein Browserfehler.
+- Opt-in DDEV-Browser-Smoke (`tests/browser-ddev-smoke.sh`, headless Chrome via CDP) prüft E2E: Login, Overlay per „+ Neue Lücke“, Datums-/Zeitfelder, Nachtschicht endet am nächsten Tag, Teilen per Aktionsdialog, Negativfall gleiche Zeiten, kein Browserfehler.
+- Alle API-Aktionen der Oberfläche laufen ohne Browser-Prompts: Teilen, AS eintragen und Kontaktversuch nutzen einen eigenen Aktions-Dialog.
+- „Offene Schichten aufnehmen“ ist eine editierbare Tabelle: „+ Zeile hinzufügen“ legt dynamisch weitere Zeilen an und übernimmt ASN, Datum und Zeiten der Vorzeile; geschlossene Dialoge überlagern den Inhalt nicht mehr (`dialog:not([open]){display:none}`).
+- Lücke-Overlay nutzt die volle Breite: Formular als Flex-Spalte statt Grid, Tabelle über die gesamte Dialogbreite, kompaktes Tabellen-Padding, Hinweissatz entfernt.
+- Übersicht ist zweistufig nach ASN gruppiert (alphabetisch, mit „Suchbogen öffnen“ je Gruppe); Schichtzeilen zeigen dd.mm | Von | Bis | AS/Aktionen.
 - Neue Lücke wird über „+ Neue Lücke“ in einem Overlay aufgenommen: ASN-Auswahl des eigenen Büros, ein Datumsfeld und zwei Zeitfelder. Liegt „Bis“ vor „Von“, endet die Nachtschicht serverseitig am nächsten Tag; gleiche Start- und Endzeit bleibt ungültig.
 - Organisation und Feiertage ausschließlich an den öffentlichen flz_organization-V1-Vertrag gebunden. Aktivierungs-/Versionsprüfung, datensparsame Fehlerdiagnose und negative Gatewaytests verhindern den bisherigen LocalBase-Fallback auch bei fehlerhaftem kanonischen Provider.
 - Browser-/DDEV-Abnahme einschließlich Migration, DI, Hintergrundjob, CSRF und Rollenmatrix abgeschlossen.

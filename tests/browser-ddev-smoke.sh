@@ -18,7 +18,8 @@ cleanup() {
         kill "$chrome_pid" >/dev/null 2>&1 || true
         wait "$chrome_pid" >/dev/null 2>&1 || true
     fi
-    rm -rf "$workdir"
+    sleep 0.2
+    rm -rf "$workdir" 2>/dev/null || true
 }
 trap cleanup EXIT
 
