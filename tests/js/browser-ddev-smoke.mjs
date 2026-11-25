@@ -209,11 +209,44 @@ try {
         await waitFor(`document.getElementById('flz-akut-status')?.textContent === 'Bereit.'`, 'Zurück zur Hauptseite');
     }
 
+    {
+        const second = (await fetchStateShifts()).find(item => item.comment === smokeComment + '-2');
+        assert.ok(second, 'Zweiter Smoke-Shift fehlt.');
+        assert.equal(await evaluate(`Boolean(document.querySelector('button[data-action="hycare"][data-id="${created.id}"]'))`), false, 'Ohne Assistent darf es keinen HyCare-Button geben.');
+        await evaluate(`document.querySelector('button[data-action="accept"][data-id="${second.id}"]').click()`);
+        await waitFor(`document.getElementById('flz-akut-action-dialog')?.open === true`, 'Aktionsdialog AS eintragen');
+        assert.equal(await evaluate(`Boolean(document.querySelector('#flz-akut-action-fields input[name=assistantUid][list=flz-akut-asn-suggestions]'))`), true, 'AS-Eintrag muss ein Suchfeld mit Datalist sein.');
+        assert.ok(await evaluate(`document.querySelectorAll('#flz-akut-asn-suggestions option').length >= 1`), 'Datalist muss Team-Vorschläge enthalten.');
+        await evaluate(`(() => {
+            const form = document.getElementById('flz-akut-action-form');
+            const input = form.querySelector('input[name=assistantUid]');
+            input.value = document.querySelector('#flz-akut-asn-suggestions option').value;
+            form.querySelector('[name=maLabel]').value = 'EB Test';
+            form.requestSubmit();
+            return true;
+        })()`);
+        await waitFor(`document.getElementById('flz-akut-action-dialog')?.open === false`, 'Aktionsdialog schließt nach Vermittlung');
+        await waitFor(`(async () => { const r = await fetch('/index.php/apps/flz_akut/api/state'); const d = await r.json(); const s = (d.shifts || []).find(i => Number(i.id) === ${second.id}); return s && s.state === 'mediated' && s.assigned_uid; })()`, 'Shift ist vermittelt');
+        const firstAssistant = await evaluate(`(async () => { const r = await fetch('/index.php/apps/flz_akut/api/state'); const d = await r.json(); return (d.teams || []).flatMap(t => t.assistants)[0]?.displayName || ''; })()`);
+        await waitFor(`(() => { const row = Array.from(document.querySelectorAll('#flz-akut-shifts tr')).find(tr => tr.querySelector('button[data-action="reopen"][data-id="${second.id}"]')); return row && row.textContent.includes(${JSON.stringify(' · mediated')}) && row.textContent.includes(${JSON.stringify(firstAssistant)}); })()`, 'Vermittelter AS mit Anzeigename sichtbar, Erneut-öffnen-Button vorhanden');
+        await waitFor(`Boolean(document.querySelector('button[data-action="hycare"][data-id="${second.id}"]'))`, 'HyCare-Button nach Vermittlung');
+        await evaluate(`document.querySelector('button[data-action="hycare"][data-id="${second.id}"]').click()`);
+        await waitFor(`(async () => { const r = await fetch('/index.php/apps/flz_akut/api/state'); const d = await r.json(); const s = (d.shifts || []).find(i => Number(i.id) === ${second.id}); return s && s.hycare_at; })()`, 'HyCare gesetzt');
+        await waitFor(`(() => { const row = Array.from(document.querySelectorAll('#flz-akut-shifts tr')).find(tr => tr.querySelector('button[data-action="hycare"][data-id="${second.id}"]')); if (!row) return false; return Array.from(row.querySelectorAll('td')).slice(0, 3).every(td => td.className.includes('documented-hycare')); })()`, 'Datum, Von und Bis lila markiert');
+    }
+
     await evaluate(`document.querySelector('button[data-action="split"][data-id="${created.id}"]').click()`);
     await waitFor(`document.getElementById('flz-akut-action-dialog')?.open === true`, 'Aktionsdialog zum Teilen');
     assert.equal(await evaluate(`document.getElementById('flz-akut-action-title')?.textContent`), 'Schicht teilen');
+    assert.equal(await evaluate(`document.querySelector('#flz-akut-action-fields [name=date]')?.value`), smokeDate, 'Teilungsdatum ist mit dem Schichtdatum vorbefüllt.');
+    assert.equal(await evaluate(`document.querySelector('#flz-akut-action-fields [name=cutRange]')?.type`), 'range', 'Schieberegler im 15-Minuten-Raster vorhanden.');
+    assert.equal(await evaluate(`document.querySelector('#flz-akut-action-fields [name=cutRange]')?.step`), '15', 'Schieberegler im 15-Minuten-Raster.');
     await evaluate(`(() => {
         const form = document.getElementById('flz-akut-action-form');
+        const range = form.querySelector('[name=cutRange]');
+        range.value = '1410';
+        range.dispatchEvent(new Event('input', {bubbles: true}));
+        if (form.elements.time.value !== '23:30') throw new Error('Schieberegler setzt das Zeitfeld nicht: ' + form.elements.time.value);
         form.elements.date.value = ${JSON.stringify(smokeDate)};
         form.elements.time.value = '23:30';
         form.requestSubmit();
@@ -226,14 +259,16 @@ try {
         while (Date.now() < deadline && !splitState) {
             const shifts = await fetchStateShifts();
             const parent = shifts.find(item => Number(item.id) === Number(created.id));
-            const parts = shifts.filter(item => Number(item.parent_shift_id) === Number(created.id));
+            const parts = shifts.filter(item => item.comment === smokeComment && Number(item.id) !== Number(created.id));
             if (parent && parent.state === 'split' && parts.length === 2) splitState = {parent, parts};
             else await sleep(150);
         }
         if (!splitState) throw new Error('Die Teilung über den Aktionsdialog wurde nicht persistiert.');
+        assert.ok(splitState.parts.every(part => part.parent_shift_id === null || part.parent_shift_id === 0), 'Geteilte Schichten sind zwei komplett getrennte Schichten ohne parent_shift_id.');
         assert.ok(splitState.parts.every(part => String(part.starts_at).startsWith(smokeDate) || String(part.ends_at).startsWith(expectedEndDate)), 'Teile müssen lückenfrei innerhalb der Nachtschicht liegen.');
     }
 
+    const smokeCountBefore = (await fetchStateShifts()).filter(item => item.comment === smokeComment).length;
     await evaluate(`document.getElementById('flz-akut-open-create').click()`);
     await waitFor(`document.getElementById('flz-akut-create-dialog')?.open === true`, 'Overlay für Negativfall');
     await evaluate(`(() => {
@@ -247,7 +282,7 @@ try {
     await waitFor(`document.getElementById('flz-akut-status')?.textContent.includes('Schichtende muss nach dem Beginn liegen.')`, 'Fehlermeldung bei gleicher Von-/Bis-Zeit');
     assert.equal(await evaluate(`document.getElementById('flz-akut-create-dialog')?.open`), true, 'Das Overlay muss bei einem Fehler offen bleiben.');
     const smokeShifts = await fetchStateShifts();
-    assert.equal(smokeShifts.filter(item => item.comment === smokeComment && !item.parent_shift_id).length, 1, 'Ein abgelehnter Fall darf keinen Datensatz anlegen.');
+    assert.equal(smokeShifts.filter(item => item.comment === smokeComment).length, smokeCountBefore, 'Ein abgelehnter Fall darf keinen Datensatz anlegen.');
     await evaluate(`document.getElementById('flz-akut-close-create').click()`);
     await waitFor(`document.getElementById('flz-akut-create-dialog')?.open === false`, 'Overlay schließt über "Schließen"');
 

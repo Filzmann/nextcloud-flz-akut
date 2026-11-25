@@ -41,7 +41,7 @@ final class ShiftWorkflow {
             $part = $original;
             unset($part['id']);
             $part['starts_at'] = $previous->format(DATE_ATOM); $part['ends_at'] = $boundary->format(DATE_ATOM);
-            $part['parent_shift_id'] = $id; $part['source_template_key'] = $original['source_template_key'];
+            $part['parent_shift_id'] = null; $part['source_template_key'] = $original['source_template_key'];
             $part['expires_at'] = ($this->retention ?? new RetentionPolicy())->expiresAt($boundary->format(DATE_ATOM), $this->retentionSettings?->days() ?? 180)->format(DATE_ATOM);
             $parts[] = $this->store->insert($part); $previous = $boundary;
         }
@@ -83,6 +83,7 @@ final class ShiftWorkflow {
     public function confirmDocumentation(int $id, string $kind, string $at, string $actorUid): array {
         $shift = $this->required($id);
         if (!in_array($kind, ['hycare', 'paper'], true)) throw new InvalidArgumentException('Dokumentationsziel ist ungültig.');
+        if (($shift['assigned_uid'] ?? null) === null || $shift['assigned_uid'] === '') throw new DomainException('HyCare-/Akteneintrag ist erst nach Vermittlung einer Assistenz möglich.');
         $updated = $this->store->update($id, [$kind . '_at' => (new DateTimeImmutable($at))->format(DATE_ATOM), $kind . '_by' => $actorUid]);
         $this->audit($shift, $kind . '_confirmed', $actorUid);
         return $updated;

@@ -24,6 +24,8 @@ async function appScenario() {
     actionForm.id = 'flz-akut-action-form'
     actionForm.elements = {}
     actionForm.reset = () => { actionForm.resetCalled = true }
+    const timeField = {value: ''}
+    actionForm.querySelector = selector => selector === '[name=time]' ? timeField : null
     let mockRows = []
     const makeRow = values => {
         const row = {values, removed: false, remove() { row.removed = true; mockRows = mockRows.filter(item => item !== row) }, querySelector(selector) {
@@ -37,7 +39,7 @@ async function appScenario() {
     const nodes = {'flz-akut-app': root, 'flz-akut-status': status, 'flz-akut-shifts': body, 'flz-akut-create': form, 'flz-akut-create-dialog': dialog, 'flz-akut-open-create': openButton, 'flz-akut-close-create': closeButton, 'flz-akut-create-rows': rowsBody, 'flz-akut-add-row': addRow, 'flz-akut-action-dialog': actionDialog, 'flz-akut-action-form': actionForm, 'flz-akut-action-title': actionTitle, 'flz-akut-action-fields': actionFields, 'flz-akut-action-close': actionClose, 'flz-akut-search-sheet': search, 'search-sheet-title': title, 'flz-akut-search-head': searchHead, 'flz-akut-search-body': searchBody}
     const calls = []
     let actionValues = {}
-    const state = {ok: true, providerStatus: 'AVAILABLE', teams: [{teamCode: 'T1', bureauKey: 'west', displayName: '<Team>', assistants: [{uid: 'as1', displayName: 'A & B'}]}, {teamCode: 'T2', bureauKey: 'east', displayName: 'Other', assistants: []}], permissions: {create: ['west'], split: ['west'], assign: ['west'], contact: ['west'], reopen: ['west'], confirmHycare: ['west'], confirmPaper: ['west']}, shifts: [{id: 1, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: 'sz', starts_at: '2026-01-01T10:00:00Z', ends_at: '2026-01-01T12:00:00Z'}, {id: 2, team_code: 'T2', bureau_key: 'east', state: 'mediated', urgency: 'week', starts_at: 'start', ends_at: 'end', assigned_uid: '<uid>'}, {id: 3, team_code: 'T1', bureau_key: 'west', state: 'mediated', urgency: 'unavailable', starts_at: 'start', ends_at: 'end', hycare_at: 'yes', paper_at: 'yes'}]}
+    const state = {ok: true, providerStatus: 'AVAILABLE', teams: [{teamCode: 'T1', bureauKey: 'west', displayName: '<Team>', assistants: [{uid: 'as1', displayName: 'A & B'}]}, {teamCode: 'T2', bureauKey: 'east', displayName: 'Other', assistants: []}], permissions: {create: ['west'], split: ['west'], assign: ['west'], contact: ['west'], reopen: ['west'], confirmHycare: ['west'], confirmPaper: ['west']}, shifts: [{id: 1, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: 'sz', starts_at: '2026-01-01T10:00:00Z', ends_at: '2026-01-01T12:00:00Z'}, {id: 2, team_code: 'T2', bureau_key: 'east', state: 'mediated', urgency: 'week', starts_at: 'start', ends_at: 'end', assigned_uid: '<uid>'}, {id: 3, team_code: 'T1', bureau_key: 'west', state: 'mediated', urgency: 'unavailable', starts_at: 'start', ends_at: 'end', assigned_uid: 'as1', hycare_at: 'yes', paper_at: 'yes'}]}
     let failure = null
     const openedUrls = []
     const context = {document: {getElementById: id => nodes[id]}, location: {search: ''}, URLSearchParams, Date, OC: {requestToken: 'synthetic-token', generateUrl: path => path}, window: {open: url => { openedUrls.push(url); return null }}, FormData: class {constructor(f) { this.form = f } get(name) { return actionValues[name] }}, fetch: async (url, options) => { calls.push({url, options}); if (failure) return response({ok: false, error: failure}, false); return response(url.endsWith('/api/state') ? state : {ok: true}) }}
@@ -48,9 +50,15 @@ async function appScenario() {
     assert.match(rowsBody.innerHTML, /&lt;Team&gt;/)
     assert.match(rowsBody.innerHTML, /disabled/)
     assert.match(rowsBody.innerHTML, /<tr>/)
+    const today = new Date().toLocaleDateString('sv-SE')
+    assert.ok(rowsBody.innerHTML.includes(`value="${today}"`), 'Erste Zeile muss mit dem aktuellen Datum vorbefüllt sein.')
     assert.match(body.innerHTML, /urgency-sz/)
     assert.match(body.innerHTML, /&lt;uid&gt;/)
     assert.match(body.innerHTML, /data-action="split"/)
+    assert.equal((body.innerHTML.match(/data-action="hycare"/g) || []).length, 1, 'HyCare-Button nur für Schichten mit Assistenz.')
+    assert.equal((body.innerHTML.match(/documented-hycare/g) || []).length, 3, 'Lila-Markierung muss Datum, Von und Bis betreffen.')
+    assert.match(body.innerHTML, /A &amp; B · mediated/, 'Der eingetragene Assistent muss mit Anzeigename sichtbar sein.')
+    assert.equal((body.innerHTML.match(/data-action="reopen"/g) || []).length, 1, 'Erneut öffnen nur mit eingetragenem AS.')
     assert.match(body.innerHTML, /class="asn-group"/)
     assert.ok(body.innerHTML.indexOf('&lt;Team&gt;') < body.innerHTML.indexOf('Other'), 'ASN-Gruppen müssen alphabetisch sortiert sein.')
     assert.match(body.innerHTML, /data-action="search" data-team="T1"/)
@@ -80,17 +88,33 @@ async function appScenario() {
     assert.equal(payload.endsAt, new Date('2026-01-01T06:00').toISOString())
     assert.equal(payload.bureauKey, 'west')
     assert.equal(modalClosed, 2)
+    assert.ok(rowsBody.innerHTML.includes(`value="${today}"`), 'Auch nach dem Anlegen muss die erste Zeile mit dem aktuellen Datum vorbefüllt sein.')
     const clickAction = async (action, id = 1, uid = 'as1') => root.handlers.click({target: {closest: selector => selector === 'button[data-action]' ? {dataset: {action, id: String(id), uid}} : null}})
     const submitAction = async values => { actionValues = values; await actionForm.handlers.submit({preventDefault() {}}) }
     await clickAction('split')
     assert.equal(actionShown, 1)
+    const fmtTestDateTime = value => new Date(value).toLocaleString('de-DE', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})
+    assert.ok(actionFields.innerHTML.includes('shift-range'), 'Split-Dialog muss den Schichtzeitraum anzeigen.')
+    assert.ok(actionFields.innerHTML.includes(fmtTestDateTime('2026-01-01T10:00:00Z')), 'Split-Dialog muss Schichtbeginn mit Datum und Uhrzeit anzeigen.')
+    assert.ok(actionFields.innerHTML.includes(fmtTestDateTime('2026-01-01T12:00:00Z')), 'Split-Dialog muss Schichtende mit Datum und Uhrzeit anzeigen.')
     assert.match(actionFields.innerHTML, /type="date"/)
     assert.match(actionFields.innerHTML, /type="time"/)
+    assert.match(actionFields.innerHTML, /type="range"/)
+    assert.match(actionFields.innerHTML, /step="15"/)
+    assert.match(actionFields.innerHTML, /value="2026-01-01"/)
+    await actionForm.handlers.input({target: {name: 'cutRange', value: '630'}})
+    assert.equal(timeField.value, '10:30', 'Schieberegler muss das Zeitfeld im 15-Minuten-Raster setzen.')
     await submitAction({date: '2026-01-01', time: '11:00'})
     const splitCall = calls.find(call => call.url.endsWith('/split'))
     assert.equal(JSON.parse(splitCall.options.body).cutPointsJson, JSON.stringify([new Date('2026-01-01T11:00').toISOString()]))
+    await clickAction('split')
+    await submitAction({date: '2026-01-01', time: '08:00'})
+    const nightCutCall = calls.filter(call => call.url.endsWith('/split')).pop()
+    assert.equal(JSON.parse(nightCutCall.options.body).cutPointsJson, JSON.stringify([new Date('2026-01-02T08:00').toISOString()]), 'Schnitt vor Schichtbeginn (Nachtschicht) muss auf den Folgetag fallen.')
     assert.ok(actionClosed >= 1)
     await clickAction('accept')
+    assert.match(actionFields.innerHTML, /list="flz-akut-asn-suggestions"/)
+    assert.match(actionFields.innerHTML, /<datalist id="flz-akut-asn-suggestions">/)
     assert.match(actionFields.innerHTML, /as1/)
     await submitAction({assistantUid: 'as1', maLabel: 'M'})
     const acceptCall = calls.find(call => call.url.endsWith('/accept'))

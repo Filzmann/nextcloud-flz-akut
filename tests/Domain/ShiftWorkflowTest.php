@@ -14,6 +14,7 @@ if ($shift['state'] !== 'open' || $shift['source_template_key'] !== 'day') throw
 
 $parts = $workflow->split((int)$shift['id'], ['2026-11-03T13:30:00+01:00'], 'dispatcher-a');
 if (count($parts) !== 2 || $parts[0]['ends_at'] !== $parts[1]['starts_at'] || $store->get((int)$shift['id'])['state'] !== 'split') throw new RuntimeException('Beliebige lückenfreie Teilung ersetzt die Ursprungsschicht nicht korrekt.');
+if ($parts[0]['parent_shift_id'] !== null || $parts[1]['parent_shift_id'] !== null || $parts[0]['state'] !== 'open' || $parts[1]['state'] !== 'open') throw new RuntimeException('Geteilte Schichten müssen komplett getrennte, offene Schichten ohne Elternbezug sein.');
 
 $accepted = $workflow->accept((int)$parts[0]['id'], 'assistant-a', 'EB / ASN', '2026-10-27T10:00:00+01:00', true, 'dispatcher-a');
 if ($accepted['state'] !== 'mediated' || $accepted['assigned_uid'] !== 'assistant-a' || $accepted['ma_label'] !== 'EB / ASN') throw new RuntimeException('Eine Schicht wird nicht genau einer AS vermittelt.');
@@ -30,6 +31,15 @@ if ($reopened['state'] !== 'open' || $reopened['assigned_uid'] !== null || count
 $first = $workflow->addContact((int)$parts[1]['id'], 'assistant-a', 'phone', 'declined', '2026-10-27T10:10:00+01:00', 'dispatcher-a', null, 'Kann vielleicht ab 17 Uhr');
 $second = $workflow->addContact((int)$parts[1]['id'], 'assistant-a', 'sms', 'open', '2026-10-27T11:10:00+01:00', 'dispatcher-b', null, 'Übermorgen erneut anfragen');
 if ($first['id'] === $second['id'] || count($store->contacts) !== 2) throw new RuntimeException('Mehrere Kontaktversuche je AS und Schicht müssen erhalten bleiben.');
+
+try {
+    $workflow->confirmDocumentation((int)$parts[1]['id'], 'hycare', '2026-10-27T12:00:00+01:00', 'dispatcher-a');
+    throw new RuntimeException('Dokumentation ohne vermittelte Assistenz darf nicht möglich sein.');
+} catch (DomainException) {
+}
+$assigned = $workflow->accept((int)$parts[1]['id'], 'assistant-a', 'EB / ASN', '2026-10-27T12:05:00+01:00', true, 'dispatcher-a');
+$documented = $workflow->confirmDocumentation((int)$parts[1]['id'], 'hycare', '2026-10-27T12:10:00+01:00', 'dispatcher-a');
+if ($documented['state'] !== 'mediated' || $documented['assigned_uid'] !== 'assistant-a' || $documented['hycare_at'] === null) throw new RuntimeException('Dokumentation nach Vermittlung muss gesetzt bleiben.');
 
 $night = $workflow->create('TeamA', 'west', '2026-11-03T22:00:00+01:00', '2026-11-03T06:00:00+01:00', 'Nachtschicht', null, 'dispatcher-a');
 if ($night['starts_at'] !== '2026-11-03T22:00:00+01:00' || $night['ends_at'] !== '2026-11-04T06:00:00+01:00') throw new RuntimeException('Nachtschicht (bis kleiner als von) muss am nächsten Tag enden.');

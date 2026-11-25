@@ -11,9 +11,9 @@
 - [ ] Teilen, AS eintragen und Kontaktversuch arbeiten ohne Browser-Prompts über eigene Dialoge; Tastaturbedienung und Fokus sind geprüft.
 - [ ] Liegt „Bis“ vor „Von“, endet die Nachtschicht am nächsten Tag; gleiche Start- und Endzeit wird mit Fehler abgelehnt.
 - [ ] Schichtvorschlag kann übernommen und danach verändert werden.
-- [ ] Eine Schicht kann an beliebigen inneren Zeitpunkten lückenfrei geteilt werden; der Ursprung bleibt unvermittelbar.
+- [ ] Eine Schicht kann an beliebigen inneren Zeitpunkten lückenfrei geteilt werden; der Ursprung bleibt unvermittelbar. Der Teilen-Dialog vorbefüllt das Schichtdatum, bietet einen 15-Minuten-Schieberegler zwischen Anfang und Ende und die entstehenden Teile sind zwei komplett getrennte offene Schichten.
 - [ ] Mehrere Telefon-/SMS-Versuche je AS und Schicht bleiben mehrzeilig erhalten; optionale Gründe und kurze Bemerkungen funktionieren.
-- [ ] Vermittlung, Wiederöffnung, HyCare und Papierakte funktionieren; Text erklärt jede Farbmarkierung.
+- [ ] Vermittlung, Wiederöffnung, HyCare und Papierakte funktionieren; Text erklärt jede Farbmarkierung. HyCare/Akte ist erst nach Vermittlung möglich; HyCare färbt Datum, Von und Bis lila. Vermittelter AS ist mit Anzeigename sichtbar; „Erneut öffnen“ nur mit AS; AS-Eintrag per Suchfeld (Team- und Vertretungsvorschläge, freie Eingabe).
 - [ ] Freitag, Wochenende und Feiertag ergeben den nächsten Büroarbeitstag korrekt; fehlende Feiertage zeigen keine falsche SZ-Aussage.
 - [ ] Nur `Datenschutzbeauftragte` können 30 bis 365 Tage konfigurieren.
 - [ ] Abgelaufene Fälle, Kontakte und Auditdaten werden gemeinsam gelöscht.

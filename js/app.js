@@ -33,6 +33,9 @@
     const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot', "'": '&#039;'}[character]))
     const url = path => OC.generateUrl('/apps/flz_akut' + path)
     const can = (capability, bureauKey) => Array.isArray(state.permissions?.[capability]) && state.permissions[capability].includes(bureauKey)
+    const minutesToTime = minutes => String(Math.floor((minutes % 1440) / 60)).padStart(2, '0') + ':' + String(minutes % 60).padStart(2, '0')
+    const today = () => new Date().toLocaleDateString('sv-SE')
+    const shiftById = id => state.shifts.find(item => Number(item.id) === Number(id))
 
     async function api(path, options = {}) {
         const response = await fetch(url(path), {credentials: 'same-origin', headers: {'Content-Type': 'application/json', requesttoken: OC.requestToken}, ...options})
@@ -42,6 +45,11 @@
     }
 
     function team(code) { return state.teams.find(item => item.teamCode === code) }
+    function assistantName(shift) {
+        const assignedTeam = team(shift.team_code)
+        const assistant = assignedTeam && assignedTeam.assistants.find(item => item.uid === shift.assigned_uid)
+        return assistant ? assistant.displayName : (shift.assigned_uid || 'Noch offen')
+    }
     function urgency(shift) {
         if (shift.urgency === 'sz') return ['urgency-sz', 'SZ – heute bis nächster Büroarbeitstag']
         if (shift.urgency === 'week') return ['urgency-week', 'Offene Schicht innerhalb der kommenden Woche']
@@ -56,7 +64,7 @@
     const fmtTime = value => { const date = new Date(value); return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'}) }
 
     function render() {
-        if (rowsBody && !rowsBody.innerHTML) renderRows([{}])
+        if (rowsBody && !rowsBody.innerHTML) renderRows([{date: today()}])
         if (!body) {
             const params = new URLSearchParams(location.search)
             if (params.get('team')) renderSearch(params.get('team'))
@@ -74,13 +82,13 @@
                 const nameClass = shift.state === 'mediated' && !shift.paper_at ? 'pending-paper' : urgencyState[0]
                 const actions = shift.state === 'open'
                     ? [actionButton('assign', shift.bureau_key, 'accept', shift.id, 'AS eintragen'), actionButton('split', shift.bureau_key, 'split', shift.id, 'Teilen')].filter(Boolean).join(' ')
-                    : actionButton('reopen', shift.bureau_key, 'reopen', shift.id, 'Erneut öffnen')
-                const documentation = [
+                    : (shift.assigned_uid ? actionButton('reopen', shift.bureau_key, 'reopen', shift.id, 'Erneut öffnen') : '')
+                const documentation = shift.assigned_uid ? [
                     actionButton('confirmHycare', shift.bureau_key, 'hycare', shift.id, shift.hycare_at ? 'HyCare ✓' : 'In HyCare eingetragen'),
                     actionButton('confirmPaper', shift.bureau_key, 'paper', shift.id, shift.paper_at ? 'Akte ✓' : 'In Akte eingetragen'),
-                ].filter(Boolean).join(' ')
-                const status = `${esc(shift.assigned_uid || 'Noch offen')} · ${esc(shift.state)}${shift.urgency === 'sz' ? ' · SZ' : ''}`
-                return `<tr><td class="${dateClass}" title="${esc(shift.hycare_at ? 'In HyCare eingetragen' : urgencyState[1])}">${fmtDate(shift.starts_at)}</td><td>${fmtTime(shift.starts_at)}</td><td>${fmtTime(shift.ends_at)}</td><td class="${nameClass}" title="${esc(shift.paper_at ? 'In Papierakte eingetragen' : urgencyState[1])}">${status}<br>${actions || '—'} ${documentation || ''}</td></tr>`
+                ].filter(Boolean).join(' ') : ''
+                const status = `${esc(assistantName(shift))} · ${esc(shift.state)}${shift.urgency === 'sz' ? ' · SZ' : ''}`
+                return `<tr><td class="${dateClass}" title="${esc(shift.hycare_at ? 'In HyCare eingetragen' : urgencyState[1])}">${fmtDate(shift.starts_at)}</td><td class="${dateClass}">${fmtTime(shift.starts_at)}</td><td class="${dateClass}">${fmtTime(shift.ends_at)}</td><td class="${nameClass}" title="${esc(shift.paper_at ? 'In Papierakte eingetragen' : urgencyState[1])}">${status}<br>${actions || '—'} ${documentation || ''}</td></tr>`
             }).join('')
             return `<tr class="asn-group"><th colspan="3">${esc(group.displayName)}</th><td><button type="button" data-action="search" data-team="${esc(group.teamCode)}">Suchbogen öffnen</button></td></tr>${rows}`
         }).join('')
@@ -120,7 +128,7 @@
         if (!entries.length) { status.textContent = 'Mindestens eine Zeile mit ASN-Team des eigenen Büros ist erforderlich.'; return }
         try {
             for (const entry of entries) await api('/api/shifts', {method: 'POST', body: JSON.stringify(entry)})
-            renderRows([{}])
+            renderRows([{date: today()}])
             dialog.close()
             await load()
         } catch (error) { status.textContent = error.message }
@@ -130,17 +138,38 @@
         currentAction = {type, id, uid}
         actionTitle.textContent = {split: 'Schicht teilen', accept: 'AS eintragen', contact: 'Kontaktversuch eintragen'}[type] || 'Aktion'
         if (type === 'split') {
-            actionFields.innerHTML = '<label>Teilungsdatum <input name="date" type="date" required></label><label>Teilungszeit <input name="time" type="time" required></label>'
+            const shift = shiftById(id)
+            const start = shift ? new Date(shift.starts_at) : null
+            const end = shift ? new Date(shift.ends_at) : null
+            let dateValue = '', startMin = 0, endMin = 0
+            if (start && end && !isNaN(start) && !isNaN(end)) {
+                dateValue = start.toLocaleDateString('sv-SE')
+                startMin = start.getHours() * 60 + start.getMinutes()
+                endMin = end.getHours() * 60 + end.getMinutes()
+                if (endMin <= startMin) endMin += 1440
+            }
+            const midMin = Math.round((startMin + endMin) / 2 / 15) * 15
+            const fmtDateTime = value => { const date = new Date(value); return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('de-DE', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'}) }
+            const rangeText = shift && start && end && !isNaN(start) && !isNaN(end) ? `${fmtDateTime(shift.starts_at)} – ${fmtDateTime(shift.ends_at)} Uhr` : ''
+            actionFields.innerHTML = `<p class="shift-range">Schichtzeitraum: ${esc(rangeText)}</p><label>Teilungsdatum <input name="date" type="date" required value="${esc(dateValue)}"></label><label>Schnittzeit <input name="time" type="time" required value="${minutesToTime(midMin)}"></label><label>Schieberegler <input name="cutRange" type="range" min="${startMin}" max="${endMin}" step="15" value="${midMin}"></label>`
         } else if (type === 'accept') {
             const shift = state.shifts.find(item => Number(item.id) === id)
             const assignedTeam = shift ? team(shift.team_code) : null
-            const options = assignedTeam ? assignedTeam.assistants.map(assistant => `<option value="${esc(assistant.uid)}">${esc(assistant.displayName)} (${esc(assistant.uid)})</option>`).join('') : ''
-            actionFields.innerHTML = `<label>Assistenz <select name="assistantUid" required>${options}</select></label><label>MA-Kürzel / Beteiligte <input name="maLabel" maxlength="255"></label>`
+            const own = assignedTeam ? assignedTeam.assistants : []
+            const substitutes = state.teams.filter(item => !assignedTeam || item.teamCode !== assignedTeam.teamCode).flatMap(item => item.assistants)
+            const options = [...own, ...substitutes].map(assistant => `<option value="${esc(assistant.uid)}">${esc(assistant.displayName)} (${esc(assistant.uid)})</option>`).join('')
+            actionFields.innerHTML = `<label>Assistenz <input name="assistantUid" list="flz-akut-asn-suggestions" required placeholder="UID oder Name"><datalist id="flz-akut-asn-suggestions">${options}</datalist></label><label>MA-Kürzel / Beteiligte <input name="maLabel" maxlength="255"></label>`
         } else if (type === 'contact') {
             actionFields.innerHTML = '<label>Kanal <select name="channel" required><option value="phone">Telefon</option><option value="sms">SMS</option></select></label><label>Ergebnis <select name="outcome" required><option value="open">offen</option><option value="accepted">angenommen</option><option value="declined">abgelehnt</option></select></label><label>Bemerkung <input name="note" maxlength="500"></label>'
         }
         actionDialog.showModal()
     }
+
+    actionForm.addEventListener('input', event => {
+        if (event.target.name !== 'cutRange') return
+        const timeField = actionForm.querySelector('[name=time]')
+        if (timeField) timeField.value = minutesToTime(Number(event.target.value))
+    })
 
     actionForm.addEventListener('submit', async event => {
         event.preventDefault()
@@ -151,7 +180,10 @@
                 const date = String(data.get('date') || '')
                 const time = String(data.get('time') || '')
                 if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !time) { status.textContent = 'Teilungsdatum und -zeit sind erforderlich.'; return }
-                await api(`/api/shifts/${currentAction.id}/split`, {method: 'POST', body: JSON.stringify({cutPointsJson: JSON.stringify([new Date(date + 'T' + time).toISOString()])})})
+                const cut = new Date(date + 'T' + time)
+                const shift = shiftById(currentAction.id)
+                if (shift && cut < new Date(shift.starts_at)) cut.setTime(cut.getTime() + 86400000)
+                await api(`/api/shifts/${currentAction.id}/split`, {method: 'POST', body: JSON.stringify({cutPointsJson: JSON.stringify([cut.toISOString()])})})
             } else if (currentAction.type === 'accept') {
                 await api(`/api/shifts/${currentAction.id}/accept`, {method: 'POST', body: JSON.stringify({assistantUid: data.get('assistantUid'), maLabel: data.get('maLabel') || '', mediatedAt: new Date().toISOString(), informedAsn: false})})
             } else if (currentAction.type === 'contact') {
