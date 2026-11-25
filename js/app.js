@@ -5,6 +5,7 @@
     const status = document.getElementById('flz-akut-status')
     const body = document.getElementById('flz-akut-shifts')
     const form = document.getElementById('flz-akut-create')
+    const dialog = document.getElementById('flz-akut-create-dialog')
     let state = {teams: [], shifts: [], permissions: {}}
     const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot', "'": '&#039;'}[character]))
     const url = path => OC.generateUrl('/apps/flz_akut' + path)
@@ -76,14 +77,21 @@
         const data = new FormData(form)
         const selected = form.elements.teamCode.selectedOptions[0]
         if (!selected || !can('create', selected.dataset.bureau)) return
+        const date = String(data.get('date') || '')
+        const startTime = String(data.get('startTime') || '')
+        const endTime = String(data.get('endTime') || '')
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !startTime || !endTime) { status.textContent = 'Datum und beide Zeitfelder sind erforderlich.'; return }
         try {
-            await api('/api/shifts', {method: 'POST', body: JSON.stringify({teamCode: data.get('teamCode'), bureauKey: selected.dataset.bureau, startsAt: new Date(data.get('startsAt')).toISOString(), endsAt: new Date(data.get('endsAt')).toISOString(), comment: data.get('comment')})})
+            await api('/api/shifts', {method: 'POST', body: JSON.stringify({teamCode: data.get('teamCode'), bureauKey: selected.dataset.bureau, startsAt: new Date(date + 'T' + startTime).toISOString(), endsAt: new Date(date + 'T' + endTime).toISOString(), comment: data.get('comment')})})
             form.reset()
+            dialog.close()
             await load()
         } catch (error) { status.textContent = error.message }
     })
 
     root.addEventListener('click', async event => {
+        if (event.target.closest('#flz-akut-open-create')) { dialog.showModal(); return }
+        if (event.target.closest('#flz-akut-close-create')) { dialog.close(); return }
         const button = event.target.closest('button[data-action]')
         if (!button) return
         const id = Number(button.dataset.id)

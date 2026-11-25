@@ -19,6 +19,14 @@ php tests/run.php
 node tests/run-js.mjs
 ```
 
+Opt-in authentifizierter Browser-Smoke gegen die laufende DDEV-Umgebung (braucht
+laufendes DDEV und google-chrome auf dem Host, legt einen synthetischen
+Nachtschicht-Testdatensatz an):
+
+```bash
+tests/browser-ddev-smoke.sh
+```
+
 ## Dokumentation
 
 - [Architektur](docs/architecture.md)

@@ -12,15 +12,19 @@ const tick = () => new Promise(resolve => setImmediate(resolve))
 async function appScenario() {
     const root = node(), status = node(), body = node(), form = node(), submit = node(), select = node()
     const search = node(), title = node(), searchHead = node(), searchBody = node()
+    const dialog = node(), openButton = node(), closeButton = node()
+    let modalShown = 0, modalClosed = 0
+    dialog.showModal = () => { modalShown++ }
+    dialog.close = () => { modalClosed++ }
     select.selectedOptions = [{dataset: {bureau: 'west'}}]
     form.elements = {teamCode: select}
     form.querySelector = () => submit
     form.reset = () => { form.resetCalled = true }
-    const nodes = {'flz-akut-app': root, 'flz-akut-status': status, 'flz-akut-shifts': body, 'flz-akut-create': form, 'flz-akut-search-sheet': search, 'search-sheet-title': title, 'flz-akut-search-head': searchHead, 'flz-akut-search-body': searchBody}
+    const nodes = {'flz-akut-app': root, 'flz-akut-status': status, 'flz-akut-shifts': body, 'flz-akut-create': form, 'flz-akut-create-dialog': dialog, 'flz-akut-open-create': openButton, 'flz-akut-close-create': closeButton, 'flz-akut-search-sheet': search, 'search-sheet-title': title, 'flz-akut-search-head': searchHead, 'flz-akut-search-body': searchBody}
     const calls = [], prompts = []
     const state = {ok: true, providerStatus: 'AVAILABLE', teams: [{teamCode: 'T1', bureauKey: 'west', displayName: '<Team>', assistants: [{uid: 'as1', displayName: 'A & B'}]}, {teamCode: 'T2', bureauKey: 'east', displayName: 'Other', assistants: []}], permissions: {create: ['west'], split: ['west'], assign: ['west'], contact: ['west'], reopen: ['west'], confirmHycare: ['west'], confirmPaper: ['west']}, shifts: [{id: 1, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: 'sz', starts_at: '2026-01-01T10:00:00Z', ends_at: '2026-01-01T12:00:00Z'}, {id: 2, team_code: 'T2', bureau_key: 'east', state: 'mediated', urgency: 'week', starts_at: 'start', ends_at: 'end', assigned_uid: '<uid>'}, {id: 3, team_code: 'T1', bureau_key: 'west', state: 'mediated', urgency: 'unavailable', starts_at: 'start', ends_at: 'end', hycare_at: 'yes', paper_at: 'yes'}]}
     let failure = null
-    const context = {document: {getElementById: id => nodes[id]}, location: {search: '?team=T1'}, URLSearchParams, Date, OC: {requestToken: 'synthetic-token', generateUrl: path => path}, FormData: class {get(name) { return {teamCode: 'T1', startsAt: '2026-01-01T10:00:00Z', endsAt: '2026-01-01T12:00:00Z', comment: 'test'}[name] }}, prompt: () => prompts.shift(), fetch: async (url, options) => { calls.push({url, options}); if (failure) return response({ok: false, error: failure}, false); return response(url.endsWith('/api/state') ? state : {ok: true}) }}
+    const context = {document: {getElementById: id => nodes[id]}, location: {search: '?team=T1'}, URLSearchParams, Date, OC: {requestToken: 'synthetic-token', generateUrl: path => path}, FormData: class {get(name) { return {teamCode: 'T1', date: '2026-01-01', startTime: '22:00', endTime: '06:00', comment: 'test'}[name] }}, prompt: () => prompts.shift(), fetch: async (url, options) => { calls.push({url, options}); if (failure) return response({ok: false, error: failure}, false); return response(url.endsWith('/api/state') ? state : {ok: true}) }}
     const path = fileURLToPath(new URL('../js/app.js', import.meta.url))
     vm.runInNewContext(fs.readFileSync(path, 'utf8'), context, {filename: path})
     await tick()
@@ -34,10 +38,20 @@ async function appScenario() {
     assert.equal(title.textContent, 'Suchbogen <Team>')
     assert.match(searchBody.innerHTML, /A &amp; B/)
     assert.equal(calls[0].options.headers.requesttoken, 'synthetic-token')
+    await root.handlers.click({target: {closest: selector => selector === '#flz-akut-open-create' ? openButton : null}})
+    assert.equal(modalShown, 1)
+    await root.handlers.click({target: {closest: selector => selector === '#flz-akut-close-create' ? closeButton : null}})
+    assert.equal(modalClosed, 1)
     await form.handlers.submit({preventDefault() {}})
-    assert.equal(calls.find(call => call.url.endsWith('/api/shifts')).options.method, 'POST')
+    const createCall = calls.find(call => call.url.endsWith('/api/shifts'))
+    assert.equal(createCall.options.method, 'POST')
+    const payload = JSON.parse(createCall.options.body)
+    assert.equal(payload.startsAt, new Date('2026-01-01T22:00').toISOString())
+    assert.equal(payload.endsAt, new Date('2026-01-01T06:00').toISOString())
+    assert.equal(payload.bureauKey, 'west')
     assert.equal(form.resetCalled, true)
-    const click = async (action, id = 1, uid = 'as1') => root.handlers.click({target: {closest: () => ({dataset: {action, id: String(id), uid}})}})
+    assert.equal(modalClosed, 2)
+    const click = async (action, id = 1, uid = 'as1') => root.handlers.click({target: {closest: selector => selector === 'button[data-action]' ? {dataset: {action, id: String(id), uid}} : null}})
     prompts.push('2026-01-01T11:00:00Z'); await click('split')
     prompts.push('as1', 'M'); await click('accept')
     await click('reopen', 3); await click('hycare'); await click('paper')

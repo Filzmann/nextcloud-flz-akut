@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Opt-in DDEV-Browser-Smoke (`tests/browser-ddev-smoke.sh`, headless Chrome via CDP) prüft E2E: Login, Overlay per „+ Neue Lücke“, Datums-/Zeitfelder, Nachtschicht endet am nächsten Tag, Negativfall gleiche Zeiten, kein Browserfehler.
+- Neue Lücke wird über „+ Neue Lücke“ in einem Overlay aufgenommen: ASN-Auswahl des eigenen Büros, ein Datumsfeld und zwei Zeitfelder. Liegt „Bis“ vor „Von“, endet die Nachtschicht serverseitig am nächsten Tag; gleiche Start- und Endzeit bleibt ungültig.
 - Organisation und Feiertage ausschließlich an den öffentlichen flz_organization-V1-Vertrag gebunden. Aktivierungs-/Versionsprüfung, datensparsame Fehlerdiagnose und negative Gatewaytests verhindern den bisherigen LocalBase-Fallback auch bei fehlerhaftem kanonischen Provider.
 - Browser-/DDEV-Abnahme einschließlich Migration, DI, Hintergrundjob, CSRF und Rollenmatrix abgeschlossen.
 - Acht bürobezogene Akutberechtigungen getrennt, standardmäßig BO, EB,

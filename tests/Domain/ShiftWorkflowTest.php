@@ -31,4 +31,19 @@ $first = $workflow->addContact((int)$parts[1]['id'], 'assistant-a', 'phone', 'de
 $second = $workflow->addContact((int)$parts[1]['id'], 'assistant-a', 'sms', 'open', '2026-10-27T11:10:00+01:00', 'dispatcher-b', null, 'Übermorgen erneut anfragen');
 if ($first['id'] === $second['id'] || count($store->contacts) !== 2) throw new RuntimeException('Mehrere Kontaktversuche je AS und Schicht müssen erhalten bleiben.');
 
+$night = $workflow->create('TeamA', 'west', '2026-11-03T22:00:00+01:00', '2026-11-03T06:00:00+01:00', 'Nachtschicht', null, 'dispatcher-a');
+if ($night['starts_at'] !== '2026-11-03T22:00:00+01:00' || $night['ends_at'] !== '2026-11-04T06:00:00+01:00') throw new RuntimeException('Nachtschicht (bis kleiner als von) muss am nächsten Tag enden.');
+
+try {
+    $workflow->create('TeamA', 'west', '2026-11-03T08:00:00+01:00', '2026-11-03T08:00:00+01:00', '', null, 'dispatcher-a');
+    throw new RuntimeException('Gleiche Start- und Endzeit darf keine Schicht ergeben.');
+} catch (InvalidArgumentException) {
+}
+
+try {
+    $workflow->create('TeamA', 'west', '2026-11-03T12:00:00+01:00', '2026-11-01T06:00:00+01:00', '', null, 'dispatcher-a');
+    throw new RuntimeException('Ein Ende mehr als 24 Stunden vor dem Beginn darf nicht als Nachtschicht durchgehen.');
+} catch (InvalidArgumentException) {
+}
+
 echo "flz_akut shift workflow tests passed\n";

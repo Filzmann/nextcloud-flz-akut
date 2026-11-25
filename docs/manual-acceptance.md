@@ -7,6 +7,8 @@
 - [ ] Eine fachlich berechtigte Person mit fremdem Bürobereich kann einen Fall weder lesen noch verändern.
 - [ ] Fehlende flz_organization-Verträge, Rollen oder Nextcloud-Gruppen führen sichtbar und serverseitig zum Rechteentzug.
 - [ ] Ausschließlich aktive Mitglieder des ASN-Teams sind als AS auswählbar; für AS wird keine Bürozuordnung vorausgesetzt oder ausgewertet.
+- [ ] „+ Neue Lücke“ öffnet ein Overlay-Formular mit ASN-Auswahl, einem Datumsfeld und zwei Zeitfeldern; das Absenden schließt das Overlay wieder.
+- [ ] Liegt „Bis“ vor „Von“, endet die Nachtschicht am nächsten Tag; gleiche Start- und Endzeit wird mit Fehler abgelehnt.
 - [ ] Schichtvorschlag kann übernommen und danach verändert werden.
 - [ ] Eine Schicht kann an beliebigen inneren Zeitpunkten lückenfrei geteilt werden; der Ursprung bleibt unvermittelbar.
 - [ ] Mehrere Telefon-/SMS-Versuche je AS und Schicht bleiben mehrzeilig erhalten; optionale Gründe und kurze Bemerkungen funktionieren.

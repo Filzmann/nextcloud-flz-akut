@@ -90,7 +90,7 @@ final class ShiftWorkflow {
 
     private function openShift(int $id): array { $shift = $this->required($id); if ($shift['state'] !== 'open') throw new DomainException('Die Schicht ist nicht offen.'); return $shift; }
     private function required(int $id): array { $shift = $this->store->get($id); if ($shift === null) throw new DomainException('Schicht nicht gefunden.'); return $shift; }
-    private function interval(string $startsAt, string $endsAt): array { $start = new DateTimeImmutable($startsAt); $end = new DateTimeImmutable($endsAt); if ($end <= $start) throw new InvalidArgumentException('Schichtende muss nach dem Beginn liegen.'); return [$start, $end]; }
+    private function interval(string $startsAt, string $endsAt): array { $start = new DateTimeImmutable($startsAt); $end = new DateTimeImmutable($endsAt); if ($end < $start) $end = $end->modify('+1 day'); if ($end <= $start) throw new InvalidArgumentException('Schichtende muss nach dem Beginn liegen.'); return [$start, $end]; }
     private function text(string $value, int $max, string $name): string { $value = trim($value); if ($value === '' || strlen($value) > $max) throw new InvalidArgumentException($name . ' ist ungültig.'); return $value; }
     private function optionalText(string $value, int $max): string { $value = trim($value); if (strlen($value) > $max) throw new InvalidArgumentException('Text ist zu lang.'); return $value; }
     private function audit(array $shift, string $action, string $actor): void { $this->store->addAudit(['shift_id' => $shift['id'], 'action' => $action, 'actor_uid' => $actor, 'occurred_at' => (new DateTimeImmutable())->format(DATE_ATOM)]); }
