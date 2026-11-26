@@ -138,24 +138,29 @@
         }
         return days
     }
-    // Abgleichregel wie OCA\FlzKapazitaet\Domain\CapacityMatching: '' = alle Schichten des Tages, nacht = mehr als die Hälfte in 00–06 Uhr, tag = nicht nacht, frueh/spaet nach Schichtbeginn vor/ab 12:00 Uhr
+    // Abgleichregel wie OCA\FlzKapazitaet\Domain\CapacityMatching: '' = alle Schichten des Tages; Komma-Liste (z. B. 'frueh,nacht') mit ODER-Semantik; nacht = mehr als die Hälfte in 00–06 Uhr, tag = nicht nacht, frueh/spaet nach Schichtbeginn vor/ab 12:00 Uhr
     const restrictionMatches = (restriction, shift) => {
         const r = String(restriction || '').toLowerCase()
         if (r === '') return true
-        if (r === 'nacht') return dayNight(shift).night
-        if (r === 'tag') return !dayNight(shift).night
+        const night = dayNight(shift).night
         const hour = tzParts(new Date(shift.starts_at)).hour
-        if (r === 'frueh') return hour < 12
-        if (r === 'spaet') return hour >= 12
-        return false
+        return r.split(',').some(part => {
+            part = part.trim()
+            if (part === 'nacht') return night
+            if (part === 'tag') return !night
+            if (part === 'frueh') return hour < 12
+            if (part === 'spaet') return hour >= 12
+            return false
+        })
     }
     const capacityFor = (uid, shift) => (state.capacities || []).find(cap => cap.uid === uid && shiftDays(shift).includes(cap.day) && restrictionMatches(cap.restriction, shift)) || null
     const capacityBadge = (uid, shift) => {
         const cap = capacityFor(uid, shift)
         if (!cap) return ''
         const parts = String(cap.day).split('-')
-        const label = {'': 'alle Schichten', frueh: 'Früh', spaet: 'Spät', tag: 'Tag', nacht: 'Nacht'}[cap.restriction] || cap.restriction
-        const letter = {'': '•', frueh: 'F', spaet: 'S', tag: 'T', nacht: 'N'}[cap.restriction] || '?'
+        const r = String(cap.restriction || '')
+        const label = r === '' ? 'alle Schichten' : r.split(',').map(p => ({frueh: 'Früh', spaet: 'Spät', tag: 'Tag', nacht: 'Nacht'})[p] || p).join(' + ')
+        const letter = r === '' ? '•' : r.split(',').map(p => ({frueh: 'F', spaet: 'S', tag: 'T', nacht: 'N'})[p] || '?').join('+')
         return `<span class="capacity-badge" title="Kapazität ${parts[2]}.${parts[1]}.${parts[0]} (${label})${cap.note ? ' – ' + esc(cap.note) : ''}">${letter}</span>`
     }
 
