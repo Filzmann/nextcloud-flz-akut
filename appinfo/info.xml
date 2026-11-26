@@ -14,5 +14,7 @@
     <settings>
         <admin>OCA\FlzAkut\Settings\Admin</admin>
         <admin-section>OCA\FlzAkut\Settings\AdminSection</admin-section>
+        <personal>OCA\FlzAkut\Settings\PersonalProfile</personal>
+        <personal-section>OCA\FlzAkut\Settings\PersonalProfileSection</personal-section>
     </settings>
 </info>

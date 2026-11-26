@@ -14,6 +14,7 @@ spl_autoload_register(static function (string $class) use ($appRoot, $workspaceR
         'OCA\\FlzPermissionMatrix\\' => $workspaceRoot . '/flz_permission_matrix/lib/',
         'OCA\\LocalBase\\' => $workspaceRoot . '/localbase/lib/',
         'OCA\\FlzPlaner\\PublicApi\\V1\\' => $workspaceRoot . '/flzplaner/lib/PublicApi/V1/',
+        'OCA\\FlzKapazitaet\\' => $workspaceRoot . '/flz_kapazitaet/lib/',
     ];
     foreach ($prefixes as $prefix => $directory) {
         if (!str_starts_with($class, $prefix)) continue;

@@ -11,6 +11,8 @@ style(Application::APP_ID, 'app');
 $settings = is_array($_['permissionSettings'] ?? null) ? $_['permissionSettings'] : [];
 $selection = is_array($_['roleSelection'] ?? null) ? $_['roleSelection'] : [];
 $options = is_array($selection['options'] ?? null) ? $selection['options'] : [];
+$mailTemplate = is_string($_['mailTemplate'] ?? null) ? $_['mailTemplate'] : '';
+$officeDayStart = is_string($_['officeDayStart'] ?? null) ? $_['officeDayStart'] : '06:00';
 ?>
 <section id="flz-akut-admin" class="section" aria-labelledby="flz-akut-admin-heading">
     <h2 id="flz-akut-admin-heading">Akutschichtvermittlung</h2>
@@ -39,5 +41,23 @@ $options = is_array($selection['options'] ?? null) ? $selection['options'] : [];
         <?php endforeach; ?>
         <button type="submit" class="primary" <?php if (!($selection['available'] ?? false)): ?>disabled<?php endif; ?>>Berechtigungen speichern</button>
         <p id="flz-akut-permission-settings-status" role="status" aria-live="polite"></p>
+    </form>
+
+    <form id="flz-akut-mail-template-form">
+        <h3>Mail-Vorlage für offene Schichten</h3>
+        <p>Die Vorlage wird beim Mail-Button je ASN mit den offenen Schichten des Teams vorbefüllt. Platzhalter: <code>{team}</code>, <code>{recipients}</code>, <code>{shifts}</code>, <code>{date}</code>, <code>{sender}</code> (Vorname der eingeloggten Person). Leer lassen setzt die Standardvorlage.</p>
+        <label for="flz-akut-mail-template">Vorlagentext</label>
+        <textarea id="flz-akut-mail-template" name="template" rows="10" maxlength="4000"><?php p($mailTemplate); ?></textarea>
+        <button type="submit" class="primary">Mail-Vorlage speichern</button>
+        <p id="flz-akut-mail-template-status" role="status" aria-live="polite"></p>
+    </form>
+
+    <form id="flz-akut-office-day-form">
+        <h3>Bürotagbeginn</h3>
+        <p>Der Bürotag beginnt um diese Uhrzeit (Standard 06:00 Uhr in der Instanz-Zeitzone aus den Nextcloud-Einstellungen). Schichten, die vor diesem Zeitpunkt enden, werden in Übersicht, Suchbogen und Mail nicht mehr angezeigt; Schichten des aktuellen Bürotags bleiben bis zum nächsten Bürotagbeginn sichtbar. Leer lassen setzt den Standard 06:00 Uhr.</p>
+        <label for="flz-akut-office-day-start">Bürotagbeginn (HH:MM)</label>
+        <input type="time" id="flz-akut-office-day-start" name="officeDayStart" value="<?php p($officeDayStart); ?>" min="00:00" max="23:59" required>
+        <button type="submit" class="primary">Bürotagbeginn speichern</button>
+        <p id="flz-akut-office-day-status" role="status" aria-live="polite"></p>
     </form>
 </section>

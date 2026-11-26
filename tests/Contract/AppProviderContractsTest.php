@@ -44,13 +44,15 @@ namespace {
                 'kind' => 'shift', 'id' => 7, 'team_code' => 'TEAM-A',
                 'starts_at' => '2026-10-28T08:00:00+01:00',
                 'ends_at' => '2026-10-28T16:00:00+01:00', 'state' => 'assigned',
+            ], [
+                'kind' => 'user-config', 'id' => 0, 'key' => 'as_info', 'value' => '{"tags":["nacht"],"note":"nur nachts"}',
             ]];
         }
     };
     $personal = new AkutPersonalDataProvider($source);
     $request = new PersonalDataRequest(new DataSubjectRef('nextcloud-user', 'assistant-1'), 'de', 'Auskunft', 10, []);
     $page = PersonalDataProviderContractTestKit::verifyScenario($personal, $request);
-    if ($page->status() !== 'complete' || count($page->entries()) !== 1 || $page->entries()[0]->reference() !== 'shift:7') {
+    if ($page->status() !== 'complete' || count($page->entries()) !== 2 || $page->entries()[0]->reference() !== 'shift:7' || $page->entries()[1]->reference() !== 'user-config:as_info') {
         throw new RuntimeException('PersonalDataProvider verletzt den öffentlichen V1-Vertrag.');
     }
     $unsupported = $personal->collect(new PersonalDataRequest(new DataSubjectRef('external-person', 'x'), 'de', 'Auskunft', 10, []));

@@ -24,5 +24,18 @@ style('flz_akut','app');
       <button type="button" id="flz-akut-action-close">Abbrechen</button>
     </form>
   </dialog>
-  <section aria-labelledby="open-shifts-title"><h2 id="open-shifts-title">Offene und vermittelte Schichten</h2><div class="table-scroll"><table><thead><tr><th>Datum</th><th>Von</th><th>Bis</th><th>AS / Aktionen</th></tr></thead><tbody id="flz-akut-shifts"></tbody></table></div></section>
+  <dialog id="flz-akut-mail-dialog" aria-labelledby="flz-akut-mail-title">
+    <form id="flz-akut-mail-form">
+      <h2 id="flz-akut-mail-title">Mail an Team und Vertretung</h2>
+      <p id="flz-akut-mail-recipients"></p>
+      <label for="flz-akut-mail-text">Mail-Text (zum Rauskopieren)</label>
+      <textarea id="flz-akut-mail-text" readonly rows="14"></textarea>
+      <div class="button-row">
+        <button type="button" id="flz-akut-mail-sent">Mail versendet</button>
+        <button type="button" id="flz-akut-mail-copy">In Zwischenablage kopieren</button>
+        <button type="button" id="flz-akut-mail-close">Schließen</button>
+      </div>
+    </form>
+  </dialog>
+  <section aria-labelledby="open-shifts-title"><h2 id="open-shifts-title">Offene und vermittelte Schichten</h2><div class="table-scroll"><table><thead><tr><th>Datum</th><th>Von</th><th>Bis</th><th>AS</th><th>Vermittelt</th><th>Kürzel</th><th>HyCare</th><th>Akte</th><th>Kommentar</th></tr></thead><tbody id="flz-akut-shifts"></tbody></table></div></section>
 </main>
