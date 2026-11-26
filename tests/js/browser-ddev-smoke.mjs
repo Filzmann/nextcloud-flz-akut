@@ -12,8 +12,12 @@ const user = process.env.AKUT_BROWSER_USER;
 const password = process.env.AKUT_BROWSER_PASSWORD;
 const screenshotPath = process.env.AKUT_BROWSER_SCREENSHOT || '';
 const smokeComment = `Browser-Smoke Nachtschicht ${Date.now()}`;
-const smokeDate = '2026-11-25';
-const expectedEndDate = '2026-11-26';
+// Dynamisches Datum (morgen), damit die Smoke-Schicht nie "vergangen" ist und aus dem State herausgefiltert würde
+const pad = n => String(n).padStart(2, '0');
+const tomorrow = new Date(Date.now() + 86400000);
+const smokeDate = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}`;
+const dayAfter = new Date(tomorrow.getTime() + 86400000);
+const expectedEndDate = `${dayAfter.getFullYear()}-${pad(dayAfter.getMonth() + 1)}-${pad(dayAfter.getDate())}`;
 
 const targetResponse = await fetch(`http://127.0.0.1:${port}/json/new?about%3Ablank`, { method: 'PUT' });
 if (!targetResponse.ok) throw new Error(`Chrome-Ziel konnte nicht angelegt werden: HTTP ${targetResponse.status}`);
@@ -213,22 +217,25 @@ try {
         const second = (await fetchStateShifts()).find(item => item.comment === smokeComment + '-2');
         assert.ok(second, 'Zweiter Smoke-Shift fehlt.');
         assert.equal(await evaluate(`Boolean(document.querySelector('button[data-action="hycare"][data-id="${created.id}"]'))`), false, 'Ohne Assistent darf es keinen HyCare-Button geben.');
-        await evaluate(`document.querySelector('button[data-action="accept"][data-id="${second.id}"]').click()`);
-        await waitFor(`document.getElementById('flz-akut-action-dialog')?.open === true`, 'Aktionsdialog AS eintragen');
-        assert.equal(await evaluate(`Boolean(document.querySelector('#flz-akut-action-fields input[name=assistantUid][list=flz-akut-asn-suggestions]'))`), true, 'AS-Eintrag muss ein Suchfeld mit Datalist sein.');
-        assert.ok(await evaluate(`document.querySelectorAll('#flz-akut-asn-suggestions option').length >= 1`), 'Datalist muss Team-Vorschläge enthalten.');
+        // AS direkt über das Suchfeld in der Zeile eintragen (kein Dialog), Speichern beim Verlassen des Feldes
+        assert.equal(await evaluate(`Boolean(document.querySelector('input[name=assistantUid][data-field="assistantUid"][data-id="${second.id}"][list="flz-akut-asn-suggestions-${second.id}"]'))`), true, 'AS-Eintrag muss ein Suchfeld mit Datalist sein.');
+        assert.ok(await evaluate(`document.querySelectorAll('#flz-akut-asn-suggestions-${second.id} option').length >= 1`), 'Datalist muss Team-Vorschläge enthalten.');
         await evaluate(`(() => {
-            const form = document.getElementById('flz-akut-action-form');
-            const input = form.querySelector('input[name=assistantUid]');
-            input.value = document.querySelector('#flz-akut-asn-suggestions option').value;
-            form.querySelector('[name=maLabel]').value = 'EB Test';
-            form.requestSubmit();
+            const input = document.querySelector('input[name=assistantUid][data-id="${second.id}"]');
+            const ma = document.querySelector('input[name=maLabel][data-id="${second.id}"]');
+            input.value = document.querySelector('#flz-akut-asn-suggestions-${second.id} option').value;
+            ma.value = 'EBT';
+            input.dispatchEvent(new FocusEvent('focusout', {bubbles: true}));
             return true;
         })()`);
-        await waitFor(`document.getElementById('flz-akut-action-dialog')?.open === false`, 'Aktionsdialog schließt nach Vermittlung');
-        await waitFor(`(async () => { const r = await fetch('/index.php/apps/flz_akut/api/state'); const d = await r.json(); const s = (d.shifts || []).find(i => Number(i.id) === ${second.id}); return s && s.state === 'mediated' && s.assigned_uid; })()`, 'Shift ist vermittelt');
-        const firstAssistant = await evaluate(`(async () => { const r = await fetch('/index.php/apps/flz_akut/api/state'); const d = await r.json(); return (d.teams || []).flatMap(t => t.assistants)[0]?.displayName || ''; })()`);
-        await waitFor(`(() => { const row = Array.from(document.querySelectorAll('#flz-akut-shifts tr')).find(tr => tr.querySelector('button[data-action="reopen"][data-id="${second.id}"]')); return row && row.textContent.includes(${JSON.stringify(' · mediated')}) && row.textContent.includes(${JSON.stringify(firstAssistant)}); })()`, 'Vermittelter AS mit Anzeigename sichtbar, Erneut-öffnen-Button vorhanden');
+        await waitFor(`(async () => { const r = await fetch('/index.php/apps/flz_akut/api/state'); const d = await r.json(); const s = (d.shifts || []).find(i => Number(i.id) === ${second.id}); return s && s.state === 'mediated' && s.assigned_uid; })()`, 'Shift ist vermittelt (AS-Feld + focusout)');
+        await waitFor(`(() => {
+            const row = Array.from(document.querySelectorAll('#flz-akut-shifts tr')).find(tr => tr.querySelector('button[data-action="reopen"][data-id="${second.id}"]'));
+            if (!row) return false;
+            const asInput = row.querySelector('input[name=assistantUid][data-id="${second.id}"]');
+            const mediated = row.querySelector('td.mediated-cell')?.textContent.trim();
+            return asInput && asInput.value && mediated && mediated !== '—';
+        })()`, 'Vermittelter AS (Feldwert gesetzt) mit Vermittlungszeit und Erneut-öffnen-Button sichtbar');
         await waitFor(`Boolean(document.querySelector('button[data-action="hycare"][data-id="${second.id}"]'))`, 'HyCare-Button nach Vermittlung');
         await evaluate(`document.querySelector('button[data-action="hycare"][data-id="${second.id}"]').click()`);
         await waitFor(`(async () => { const r = await fetch('/index.php/apps/flz_akut/api/state'); const d = await r.json(); const s = (d.shifts || []).find(i => Number(i.id) === ${second.id}); return s && s.hycare_at; })()`, 'HyCare gesetzt');
@@ -260,10 +267,11 @@ try {
             const shifts = await fetchStateShifts();
             const parent = shifts.find(item => Number(item.id) === Number(created.id));
             const parts = shifts.filter(item => item.comment === smokeComment && Number(item.id) !== Number(created.id));
-            if (parent && parent.state === 'split' && parts.length === 2) splitState = {parent, parts};
+            // Die alte Schicht wird durch die Teile ersetzt: Ursprung (state=split) darf nicht mehr im State sichtbar sein
+            if (!parent && parts.length === 2) splitState = {parts};
             else await sleep(150);
         }
-        if (!splitState) throw new Error('Die Teilung über den Aktionsdialog wurde nicht persistiert.');
+        if (!splitState) throw new Error('Die Teilung wurde nicht persistiert (Ursprung verschwindet, zwei Teile bleiben).');
         assert.ok(splitState.parts.every(part => part.parent_shift_id === null || part.parent_shift_id === 0), 'Geteilte Schichten sind zwei komplett getrennte Schichten ohne parent_shift_id.');
         assert.ok(splitState.parts.every(part => String(part.starts_at).startsWith(smokeDate) || String(part.ends_at).startsWith(expectedEndDate)), 'Teile müssen lückenfrei innerhalb der Nachtschicht liegen.');
     }
@@ -285,6 +293,33 @@ try {
     assert.equal(smokeShifts.filter(item => item.comment === smokeComment).length, smokeCountBefore, 'Ein abgelehnter Fall darf keinen Datensatz anlegen.');
     await evaluate(`document.getElementById('flz-akut-close-create').click()`);
     await waitFor(`document.getElementById('flz-akut-create-dialog')?.open === false`, 'Overlay schließt über "Schließen"');
+
+    // Persönliche Einstellungen (/settings/user/flz_akut): Kürzel hinterlegen, validieren, wiederherstellen
+    await cdp.call('Page.navigate', { url: `${baseUrl}/index.php/settings/user/flz_akut?browser-smoke=${Date.now()}` });
+    await waitFor(`document.readyState === 'complete' && document.getElementById('flz-akut-profile')`, 'Akutdienst-Sektion in /settings/user', 30000);
+    await sleep(1000); // profile-personal.js initialisiert nach DOMContentLoaded
+    const originalKuerzel = await evaluate(`document.getElementById('flz-akut-profile-kuerzel')?.value || ''`);
+    await evaluate(`(() => {
+        const input = document.getElementById('flz-akut-profile-kuerzel');
+        input.value = 'SMK';
+        input.dispatchEvent(new Event('input', {bubbles: true}));
+        document.getElementById('flz-akut-profile-form').requestSubmit();
+        return true;
+    })()`);
+    await waitFor(`document.getElementById('flz-akut-profile-status')?.textContent === 'Kürzel gespeichert.'`, 'Kürzel speichern', 20000);
+    // Ungültiges Kürzel (Ziffer) wird clientseitig vom pattern blockiert, serverseitig mit 400 abgelehnt
+    assert.equal(await evaluate(`(() => { const i = document.getElementById('flz-akut-profile-kuerzel'); i.value = 'AB1'; return i.checkValidity(); })()`), false, 'Kürzel mit Ziffer darf clientseitig nicht valide sein.');
+    const invalidPut = await evaluate(`(async () => { const r = await fetch('/index.php/apps/flz_akut/api/profile/kuerzel', {method: 'PUT', credentials: 'same-origin', headers: {'Content-Type': 'application/json', requesttoken: window.OC.requestToken}, body: JSON.stringify({kuerzel: 'AB1'})}); const d = await r.json(); return { status: r.status, error: d.error || '' }; })()`);
+    assert.equal(invalidPut.status, 400, 'Ungültiges Kürzel muss serverseitig 400 liefern.');
+    assert.ok(invalidPut.error.includes('höchstens'), 'Fehlermeldung muss die Zeichenregel nennen.');
+    await evaluate(`(() => {
+        const input = document.getElementById('flz-akut-profile-kuerzel');
+        input.value = ${JSON.stringify(originalKuerzel)};
+        input.dispatchEvent(new Event('input', {bubbles: true}));
+        document.getElementById('flz-akut-profile-form').requestSubmit();
+        return true;
+    })()`);
+    await waitFor(`document.getElementById('flz-akut-profile-status')?.textContent === 'Kürzel gespeichert.'`, 'Kürzel wiederherstellen', 20000);
 
     const browserErrors = await evaluate(`window.__akutBrowserErrors || []`);
     assert.deepEqual(browserErrors, [], `Die Oberfläche erzeugte Browserfehler: ${browserErrors.join('; ')}`);

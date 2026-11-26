@@ -11,7 +11,7 @@ use OCP\Config\IUserConfig;
  * gespeichert in der nativen Nextcloud-UserConfig. Maximal 4 Zeichen (Buchstaben groß/klein
  * und Punkt, mindestens ein Buchstabe). Vorbelegung: erste zwei Buchstaben des Nachnamens,
  * sonst Initialen (1. Buchstabe Vorname + Nachname). Eindeutigkeit über den normalisierten
- * Index-Schlüssel (kleingeschrieben) per getUsersForUserValue.
+ * Index-Schlüssel (kleingeschrieben) per searchUsersByValueString (NC 31+).
  */
 final class MaKuerzelService {
     public const APP_ID = 'flz_akut';
@@ -29,12 +29,13 @@ final class MaKuerzelService {
         return strtolower($kuerzel);
     }
 
-    /** @return list<string> UIDs anderer Mitarbeiter mit diesem Kürzel (case-insensitiv) */
+    /** @return list<string> UIDs anderer Mitarbeiter mit diesem Kürzel (über den normalisierten Index-Schlüssel) */
     public function takenBy(string $kuerzel, string $exceptUid): array {
-        return array_values(array_filter(
-            $this->config->getUsersForUserValue(self::APP_ID, self::KEY_NORM, $this->normalize($kuerzel)),
-            static fn(string $uid): bool => $uid !== $exceptUid
-        ));
+        $found = [];
+        foreach ($this->config->searchUsersByValueString(self::APP_ID, self::KEY_NORM, $this->normalize($kuerzel)) as $uid) {
+            if ($uid !== $exceptUid) $found[] = $uid;
+        }
+        return array_values($found);
     }
 
     /** Default-Ableitung aus dem Anzeigenamen: erste zwei Buchstaben des Nachnamens, sonst Initialen. */

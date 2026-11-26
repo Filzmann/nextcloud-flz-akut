@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Fix: `IUserConfig::getUsersForUserValue()` existiert in NC 34 nicht — Kürzel-Eindeutigkeit jetzt über `searchUsersByValueString()` auf den normalisierten Schlüssel (MaKuerzelService); PUT `/api/profile/kuerzel` lieferte dadurch 503 statt zu speichern.
+- 503-Catch-all in ProfileController loggt Exceptions strukturiert (Psr\Log\LoggerInterface) statt sie still zu schlucken.
+- DDEV-Browser-Smoke erweitert: persönliches Kürzel in /settings/user/flz_akut speichern (gültig), ungültiges Kürzel clientseitig (pattern) und serverseitig (400) ablehnen, Original wiederherstellen; Datum dynamisch (morgen), AS-Vermittlung über das Suchfeld statt Dialog, Split-Assertion an 'alte Schicht wird ersetzt' angepasst.
+
 - Suchbogen AS-Info: Das Info-Icon je AS ist jetzt ein größerer klickbarer Button und öffnet das Overlay direkt; das Overlay startet schreibgeschützt, der Stift-Button im Overlay schaltet die Bearbeitung frei (Speichern erst dann möglich). Neue Verfügbarkeitsoption „nur Spät“ (`spaet`) neben nur Tag/nur Nacht/nur Früh. Tel/SMS-Checkboxen stehen per CSS wieder nebeneinander mit ihrem Label (ID-Selektor `#flz-akut-app label` hatte `flex-direction:column` durchgereicht).
 
 - Suchbogen um Kapazitätsmeldungen aus `flz_kapazitaet` ergänzt: `CapacityGateway` liest read-only über den öffentlichen `OCA\FlzKapazitaet\PublicApi\V1\CapacityQueryEvent` (fail-closed per `class_exists`, ohne Provider leer) und `GET /api/state` liefert `capacities` für die Team-AS des sichtbaren Schichtfensters. Jede Schichtzelle des Suchbogens zeigt ein Badge (•/F/S/T/N) für eine passende Kapazität — Abgleichregel identisch zu `CapacityMatching` (Kalendertag in der Instanz-Zeitzone, Überlappung; nacht = mehr als die Hälfte in 00–06 Uhr; früh/spät nach Beginn vor/ab 12:00 Uhr). Zusätzlich lassen sich weitere AS-Zeilen manuell über „+ Zeile hinzufügen“ ergänzen (nur Sitzung, mit Entfernen-Button).

@@ -11,10 +11,11 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 use OCP\IUserSession;
 
 final class ProfileController extends Controller {
-    public function __construct(IRequest $request, private IUserSession $session, private MaKuerzelService $kuerzel) { parent::__construct(Application::APP_ID, $request); }
+    public function __construct(IRequest $request, private IUserSession $session, private MaKuerzelService $kuerzel, private LoggerInterface $logger) { parent::__construct(Application::APP_ID, $request); }
 
     #[NoAdminRequired]
     public function saveKuerzel(string $kuerzel = ''): DataResponse {
@@ -34,7 +35,8 @@ final class ProfileController extends Controller {
             return new DataResponse(['ok' => false, 'error' => $e->getMessage(), 'suggestions' => $e->suggestions], 409);
         } catch (\DomainException $e) {
             return new DataResponse(['ok' => false, 'error' => $e->getMessage()], 403);
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            $this->logger->error('flz_akut profile request failed: ' . $e->getMessage(), ['app' => Application::APP_ID, 'exception' => $e]);
             return new DataResponse(['ok' => false, 'error' => 'Profil konnte nicht gespeichert werden.'], 503);
         }
     }

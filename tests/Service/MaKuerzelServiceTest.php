@@ -6,7 +6,7 @@ namespace OCP\Config {
     interface IUserConfig {
         public function getValueString(string $userId, string $appName, string $key, string $default = ''): string;
         public function setValueString(string $userId, string $appName, string $key, string $value): void;
-        public function getUsersForUserValue(string $appName, string $key, string $value): array;
+        public function searchUsersByValueString(string $app, string $key, string $value, bool $caseInsensitive = false): \Generator;
     }
 }
 
@@ -20,12 +20,12 @@ namespace {
         public array $store = [];
         public function getValueString(string $userId, string $appName, string $key, string $default = ''): string { return $this->store[$userId][$appName][$key] ?? $default; }
         public function setValueString(string $userId, string $appName, string $key, string $value): void { $this->store[$userId][$appName][$key] = $value; }
-        public function getUsersForUserValue(string $appName, string $key, string $value): array {
-            $out = [];
+        public function searchUsersByValueString(string $app, string $key, string $value, bool $caseInsensitive = false): \Generator {
             foreach ($this->store as $uid => $apps) {
-                if (($apps[$appName][$key] ?? null) === $value) $out[] = $uid;
+                $stored = $apps[$app][$key] ?? null;
+                if ($stored === null) continue;
+                if ($caseInsensitive ? strtolower($stored) === strtolower($value) : $stored === $value) yield $uid;
             }
-            return $out;
         }
     };
     $service = new MaKuerzelService($config);
