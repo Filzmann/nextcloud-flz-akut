@@ -117,7 +117,8 @@ try {
 
     await cdp.call('Page.navigate', { url: `${baseUrl}/index.php/apps/flz_akut/?browser-smoke=${Date.now()}` });
     await waitFor(`document.readyState === 'complete' && document.getElementById('flz-akut-app')`, 'App-Dokument');
-    await waitFor(`document.getElementById('flz-akut-status')?.textContent === 'Bereit.'`, 'geladener App-Zustand');
+    await waitFor(`(document.getElementById('flz-akut-status')?.textContent || '').startsWith('Bereit.')`, 'geladener App-Zustand');
+    await waitFor(`(document.getElementById('flz-akut-status')?.textContent || '').includes('Live alle 10 s, zuletzt')`, 'Live-Polling-Status nach dem ersten Poll', 25000);
     {
         const width = await evaluate(`(() => { const app = document.getElementById('flz-akut-app'); const content = document.getElementById('content'); return {app: Math.round(app.getBoundingClientRect().width), content: content ? content.clientWidth : 0}; })()`);
         assert.ok(width.app >= width.content * 0.95, `App-Root muss die volle Fensterbreite nutzen (${width.app} < 95% von ${width.content})`);
@@ -210,7 +211,7 @@ try {
         assert.equal(await evaluate(`document.getElementById('flz-akut-search-sheet').hidden`), false, 'Suchbogen muss auf seiner Seite sichtbar sein.');
         assert.ok(await evaluate(`document.getElementById('flz-akut-search-body').textContent.length > 0`), 'Suchbogen muss Zeilen rendern.');
         await cdp.call('Page.navigate', { url: `${baseUrl}/index.php/apps/flz_akut/?browser-smoke=${Date.now()}` });
-        await waitFor(`document.getElementById('flz-akut-status')?.textContent === 'Bereit.'`, 'Zurück zur Hauptseite');
+        await waitFor(`(document.getElementById('flz-akut-status')?.textContent || '').startsWith('Bereit.')`, 'Zurück zur Hauptseite');
     }
 
     {

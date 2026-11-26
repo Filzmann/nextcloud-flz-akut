@@ -43,7 +43,11 @@ async function appScenario() {
     const nodes = {'flz-akut-app': root, 'flz-akut-status': status, 'flz-akut-shifts': body, 'flz-akut-create': form, 'flz-akut-create-dialog': dialog, 'flz-akut-open-create': openButton, 'flz-akut-close-create': closeButton, 'flz-akut-create-rows': rowsBody, 'flz-akut-add-row': addRow, 'flz-akut-action-dialog': actionDialog, 'flz-akut-action-form': actionForm, 'flz-akut-action-title': actionTitle, 'flz-akut-action-fields': actionFields, 'flz-akut-action-close': actionClose, 'flz-akut-search-sheet': search, 'search-sheet-title': title, 'flz-akut-search-head': searchHead, 'flz-akut-search-body': searchBody, 'flz-akut-mail-dialog': mailDialog, 'flz-akut-mail-text': mailText, 'flz-akut-mail-recipients': mailRecipients, 'flz-akut-mail-copy': mailCopy, 'flz-akut-mail-close': mailClose}
     const calls = []
     let actionValues = {}
-    const state = {ok: true, providerStatus: 'AVAILABLE', mailTemplate: 'Hallo {recipients}\nTeam: {team}\nDatum: {date}\nAbsender: {sender}\nOffen:\n{shifts}', officeDayStart: '06:00', timezone: 'Europe/Berlin', teams: [{teamCode: 'T1', bureauKey: 'west', displayName: '<Team>', assistants: [{uid: 'as1', displayName: 'A & B'}]}, {teamCode: 'T2', bureauKey: 'east', displayName: 'Other', assistants: [{uid: 'as2', displayName: 'Vertretung V'}]}], permissions: {create: ['west'], split: ['west'], assign: ['west'], contact: ['west'], reopen: ['west'], confirmHycare: ['west'], confirmPaper: ['west'], read: ['west']}, shifts: [{id: 1, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: 'sz', starts_at: '2030-01-01T10:00:00Z', ends_at: '2030-01-01T12:00:00Z'}, {id: 2, team_code: 'T2', bureau_key: 'east', state: 'mediated', urgency: 'week', starts_at: new Date(Date.now() + 7200e3).toISOString(), ends_at: new Date(Date.now() + 10800e3).toISOString(), assigned_uid: '<uid>', mediated_at: '2026-01-01T09:30:00Z'}, {id: 3, team_code: 'T1', bureau_key: 'west', state: 'mediated', urgency: 'unavailable', starts_at: new Date(Date.now() + 7200e3).toISOString(), ends_at: new Date(Date.now() + 10800e3).toISOString(), assigned_uid: 'as1', mediated_at: '2026-01-02T08:15:00Z', hycare_at: 'yes', paper_at: 'yes'}, {id: 4, team_code: 'T1', bureau_key: 'west', state: 'mediated', urgency: '', starts_at: new Date(Math.min(Math.max(new Date().setHours(6, 0, 0, 0), Date.now() - 7200e3), Date.now())).toISOString(), ends_at: new Date(Math.min(Math.max(new Date().setHours(6, 0, 0, 0), Date.now() - 7200e3), Date.now()) + 4 * 3600e3).toISOString(), assigned_uid: 'as1', mediated_at: '2020-01-01T09:00:00Z'}, {id: 5, team_code: 'T1', bureau_key: 'west', state: 'split', urgency: '', starts_at: '2030-01-02T10:00:00Z', ends_at: '2030-01-02T12:00:00Z'}, {id: 6, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: '', starts_at: new Date(new Date().setHours(0, 0, 0, 0) - 7200e3).toISOString(), ends_at: new Date(new Date().setHours(0, 0, 0, 0) - 3600e3).toISOString()}, {id: 7, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: '', starts_at: new Date(new Date().setHours(7, 0, 0, 0)).toISOString(), ends_at: new Date(new Date().setHours(12, 0, 0, 0)).toISOString()}, {id: 8, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: '', starts_at: new Date(new Date().setHours(20, 0, 0, 0)).toISOString(), ends_at: new Date(new Date().setHours(6, 0, 0, 0) + 20 * 3600e3).toISOString()}, {id: 9, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: '', starts_at: new Date(new Date().setHours(6, 0, 0, 0) + 16 * 3600e3).toISOString(), ends_at: new Date(new Date().setHours(6, 0, 0, 0) + 24 * 3600e3).toISOString()}]}
+    // deterministische Uhrzeit (morgen 12:00 lokal): so sind Bürotagbeginn (06:00) und "Schicht begonnen" zu jeder Tageszeit stabil prüfbar
+    const FIXED_NOW = new Date(); FIXED_NOW.setDate(FIXED_NOW.getDate() + 1); FIXED_NOW.setHours(12, 0, 0, 0)
+    class FakeDate extends Date { constructor(...args) { super(...(args.length ? args : [FIXED_NOW.getTime()])) } static now() { return FIXED_NOW.getTime() } }
+    const at = (h, m = 0) => { const d = new Date(FIXED_NOW.getTime()); d.setHours(h, m, 0, 0); return d }
+    const state = {ok: true, providerStatus: 'AVAILABLE', mailTemplate: 'Hallo {recipients}\nTeam: {team}\nDatum: {date}\nAbsender: {sender}\nOffen:\n{shifts}', officeDayStart: '06:00', timezone: 'Europe/Berlin', teams: [{teamCode: 'T1', bureauKey: 'west', displayName: '<Team>', assistants: [{uid: 'as1', displayName: 'A & B'}]}, {teamCode: 'T2', bureauKey: 'east', displayName: 'Other', assistants: [{uid: 'as2', displayName: 'Vertretung V'}]}], permissions: {create: ['west'], split: ['west'], assign: ['west'], contact: ['west'], reopen: ['west'], confirmHycare: ['west'], confirmPaper: ['west'], read: ['west']}, shifts: [{id: 1, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: 'sz', starts_at: '2030-01-01T10:00:00Z', ends_at: '2030-01-01T12:00:00Z'}, {id: 2, team_code: 'T2', bureau_key: 'east', state: 'mediated', urgency: 'week', starts_at: at(10).toISOString(), ends_at: at(12).toISOString(), assigned_uid: '<uid>', mediated_at: '2026-01-01T09:30:00Z'}, {id: 3, team_code: 'T1', bureau_key: 'west', state: 'mediated', urgency: 'unavailable', starts_at: at(13).toISOString(), ends_at: at(15).toISOString(), assigned_uid: 'as1', mediated_at: '2026-01-02T08:15:00Z', hycare_at: 'yes', paper_at: 'yes'}, {id: 4, team_code: 'T1', bureau_key: 'west', state: 'mediated', urgency: '', starts_at: at(7).toISOString(), ends_at: at(11).toISOString(), assigned_uid: 'as1', mediated_at: '2020-01-01T09:00:00Z'}, {id: 5, team_code: 'T1', bureau_key: 'west', state: 'split', urgency: '', starts_at: '2030-01-02T10:00:00Z', ends_at: '2030-01-02T12:00:00Z'}, {id: 6, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: '', starts_at: new Date(at(0).getTime() - 7200e3).toISOString(), ends_at: new Date(at(0).getTime() - 3600e3).toISOString()}, {id: 7, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: '', starts_at: at(7).toISOString(), ends_at: at(12).toISOString()}, {id: 8, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: '', starts_at: at(20).toISOString(), ends_at: new Date(at(20).getTime() + 6 * 3600e3).toISOString()}, {id: 9, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: '', starts_at: at(22).toISOString(), ends_at: new Date(at(22).getTime() + 8 * 3600e3).toISOString()}]}
     let failure = null
     const openedUrls = []
     const doc = {getElementById: id => nodes[id], activeElement: null}
@@ -51,7 +55,7 @@ async function appScenario() {
     restoredEl.focus = () => { restoredEl.focused = true }
     restoredEl.setSelectionRange = (a, b) => { restoredEl.sel = [a, b] }
     root.querySelector = selector => selector.includes('data-field') ? restoredEl : null
-    const context = {document: doc, location: {search: ''}, URLSearchParams, Date, OC: {requestToken: 'synthetic-token', generateUrl: path => path, getCurrentUser: () => ({uid: 'dispo', displayName: 'Tom Dispatcher'})}, window: {open: url => { openedUrls.push(url); return null }}, FormData: class {constructor(f) { this.form = f } get(name) { return actionValues[name] }}, fetch: async (url, options) => { calls.push({url, options}); if (failure) return response({ok: false, error: failure}, false); if (url.endsWith('/api/state')) return response(state); if (url.includes('/update')) { const found = state.shifts.find(s => url.includes(`/shifts/${s.id}/`)) || {}; const body = JSON.parse(options.body); const mapped = {...found, id: found.id}; if (body.assistantUid !== undefined) mapped.assigned_uid = body.assistantUid; if (body.maLabel !== undefined) mapped.ma_label = body.maLabel === '' ? null : body.maLabel; if (body.comment !== undefined) mapped.comment = body.comment; return response({ok: true, shift: mapped}) } if (url.includes('/mail-sent')) { const found = state.shifts.find(s => url.includes(`/shifts/${s.id}/`)) || {}; return response({ok: true, shift: {...found, comment: 'MTV 26.11. DI|' + (found.comment || '')}}) } return response({ok: true}) }}
+    const context = {document: doc, location: {search: ''}, URLSearchParams, Date: FakeDate, OC: {requestToken: 'synthetic-token', generateUrl: path => path, getCurrentUser: () => ({uid: 'dispo', displayName: 'Tom Dispatcher'})}, window: {open: url => { openedUrls.push(url); return null }}, FormData: class {constructor(f) { this.form = f } get(name) { return actionValues[name] }}, fetch: async (url, options) => { calls.push({url, options}); if (failure) return response({ok: false, error: failure}, false); if (url.endsWith('/api/state')) return response(state); if (url.includes('/update')) { const found = state.shifts.find(s => url.includes(`/shifts/${s.id}/`)) || {}; const body = JSON.parse(options.body); const mapped = {...found, id: found.id}; if (body.assistantUid !== undefined) mapped.assigned_uid = body.assistantUid; if (body.maLabel !== undefined) mapped.ma_label = body.maLabel === '' ? null : body.maLabel; if (body.comment !== undefined) mapped.comment = body.comment; return response({ok: true, shift: mapped}) } if (url.includes('/mail-sent')) { const found = state.shifts.find(s => url.includes(`/shifts/${s.id}/`)) || {}; return response({ok: true, shift: {...found, comment: 'MTV 26.11. DI|' + (found.comment || '')}}) } return response({ok: true}) }}
     const path = fileURLToPath(new URL('../js/app.js', import.meta.url))
     vm.runInNewContext(fs.readFileSync(path, 'utf8'), context, {filename: path})
     await tick()
@@ -59,7 +63,7 @@ async function appScenario() {
     assert.match(rowsBody.innerHTML, /&lt;Team&gt;/)
     assert.match(rowsBody.innerHTML, /disabled/)
     assert.match(rowsBody.innerHTML, /<tr>/)
-    const today = new Date().toLocaleDateString('sv-SE')
+    const today = new Date(FIXED_NOW.getTime()).toLocaleDateString('sv-SE')
     assert.ok(rowsBody.innerHTML.includes(`value="${today}"`), 'Erste Zeile muss mit dem aktuellen Datum vorbefüllt sein.')
     assert.match(body.innerHTML, /urgency-sz/)
     assert.match(body.innerHTML, /&lt;uid&gt;/)
@@ -210,7 +214,7 @@ async function appScenario() {
     const beforeSent = calls.length
     await root.handlers.click({target: {closest: selector => selector === '#flz-akut-mail-sent' ? {} : null}})
     const sentCalls = calls.slice(beforeSent).filter(call => call.url.includes('/mail-sent'))
-    const dayStart = new Date(); dayStart.setHours(6, 0, 0, 0)
+    const dayStart = new Date(FIXED_NOW.getTime()); dayStart.setHours(6, 0, 0, 0)
     const expectedVisible = state.shifts.filter(shift => shift.state !== 'split' && new Date(shift.starts_at) >= dayStart)
     assert.ok(expectedVisible.length > 0, 'Szenario braucht sichtbare Schichten.')
     assert.equal(sentCalls.length, expectedVisible.length, '"Mail versendet" vermerkt genau die aktuell sichtbaren Schichten.')
@@ -262,11 +266,58 @@ async function searchScenario() {
     const nodes = {'flz-akut-app': root, 'flz-akut-status': status, 'flz-akut-search-sheet': search, 'search-sheet-title': title, 'flz-akut-search-head': searchHead, 'flz-akut-search-body': searchBody, 'flz-akut-search-summary': searchSummary, 'flz-akut-manual-input': manualInput, 'flz-akut-sms-dialog': smsDialog, 'flz-akut-sms-text': smsText, 'flz-akut-asinfo-dialog': asinfoDialog, 'flz-akut-asinfo-form': asinfoForm, 'flz-akut-asinfo-title': asinfoTitle, 'flz-akut-asinfo-note': asinfoNote, 'flz-akut-asinfo-edit': asinfoEdit, 'flz-akut-asinfo-save': asinfoSave, 'flz-akut-action-dialog': actionDialog, 'flz-akut-action-form': actionForm, 'flz-akut-action-title': actionTitle, 'flz-akut-action-fields': actionFields, 'flz-akut-action-close': actionClose}
     const calls = []
     const state = {ok: true, providerStatus: 'AVAILABLE', mailTemplate: '{shifts}', timezone: 'Europe/Berlin', capacities: [{uid: 'as1', day: '2030-01-01', restriction: '', note: 'alles'}, {uid: 'as1', day: '2030-01-02', restriction: 'frueh,nacht', note: 'nur nachts'}, {uid: 'as1', day: '2030-01-03', restriction: 'tag', note: null}, {uid: 'as2', day: '2030-01-01', restriction: '', note: null}], contacts: [{id: 9, shiftId: 1, assistantUid: 'as1', channel: 'phone', outcome: 'ab', contactedAt: '2030-01-01T09:30:00+00:00'}], absences: [{uid: 'as1', startsAt: '2029-12-31T00:00:00+00:00', endsAt: '2030-01-02T00:00:00+00:00', status: 'approved', label: 'Urlaub'}], teams: [{teamCode: 'T1', bureauKey: 'west', displayName: '<Team>', assistants: [{uid: 'as1', displayName: 'A & B', info: {tags: ['nacht'], note: 'nur nachts'}, comment: 'bevorzugt Vormittag'}]}, {teamCode: 'T2', bureauKey: 'east', displayName: 'Other', assistants: [{uid: 'as2', displayName: 'Vertretung V'}]}], permissions: {contact: ['west']}, shifts: [{id: 1, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: 'sz', starts_at: '2030-01-01T10:00:00Z', ends_at: '2030-01-01T12:00:00Z'}, {id: 2, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: '', starts_at: '2030-01-02T22:00:00Z', ends_at: '2030-01-03T06:00:00Z'}, {id: 3, team_code: 'T1', bureau_key: 'west', state: 'mediated', urgency: '', starts_at: '2030-01-04T10:00:00Z', ends_at: '2030-01-04T12:00:00Z', assigned_uid: 'as1'}]}
-    const context = {document: {getElementById: id => nodes[id]}, location: {search: '?team=T1'}, URLSearchParams, Date, OC: {requestToken: 'synthetic-token', generateUrl: path => path, getCurrentUser: () => ({uid: 'dispo', displayName: 'Tom Dispatcher'})}, window: {open: () => null}, FormData: class {get() { return null }}, fetch: async (url, options) => { calls.push({url, options}); if (url.endsWith('/api/state')) return response(state); if (url.endsWith('/contacts')) { const body = JSON.parse(options.body); return response({ok: true, attempt: {id: 100 + calls.length, shift_id: Number((url.match(/\/shifts\/(\d+)\/contacts/) || [])[1]), assistant_uid: body.assistantUid, channel: body.channel, outcome: body.outcome, contacted_at: body.contactedAt, reason: null, note: null}}) } if (url.includes('/assistants/') && url.endsWith('/meta')) { const body = JSON.parse(options.body); const info = body.tagsJson !== undefined ? {tags: JSON.parse(body.tagsJson), note: body.note ?? ''} : {tags: ['nacht'], note: 'nur nachts'}; return response({ok: true, info, comment: body.comment ?? 'bevorzugt Vormittag'}) } return response({ok: true}) }}
+    const intervals = []
+    const docListeners = {}
+    const document = {
+        getElementById: id => nodes[id],
+        hidden: false,
+        activeElement: null,
+        querySelector: () => null,
+        addEventListener: (type, fn) => { (docListeners[type] = docListeners[type] || []).push(fn) },
+    }
+    const context = {document, location: {search: '?team=T1'}, URLSearchParams, Date, OC: {requestToken: 'synthetic-token', generateUrl: path => path, getCurrentUser: () => ({uid: 'dispo', displayName: 'Tom Dispatcher'})}, window: {open: () => null}, FormData: class {get() { return null }}, setInterval: fn => { intervals.push(fn); return intervals.length }, clearInterval: () => {}, setTimeout, clearTimeout, fetch: async (url, options) => { calls.push({url, options}); if (url.endsWith('/api/state')) return response(state); if (url.endsWith('/contacts')) { const body = JSON.parse(options.body); return response({ok: true, attempt: {id: 100 + calls.length, shift_id: Number((url.match(/\/shifts\/(\d+)\/contacts/) || [])[1]), assistant_uid: body.assistantUid, channel: body.channel, outcome: body.outcome, contacted_at: body.contactedAt, reason: null, note: null}}) } if (url.includes('/assistants/') && url.endsWith('/meta')) { const body = JSON.parse(options.body); const info = body.tagsJson !== undefined ? {tags: JSON.parse(body.tagsJson), note: body.note ?? ''} : {tags: ['nacht'], note: 'nur nachts'}; return response({ok: true, info, comment: body.comment ?? 'bevorzugt Vormittag'}) } return response({ok: true}) }}
     const path = fileURLToPath(new URL('../js/app.js', import.meta.url))
     vm.runInNewContext(fs.readFileSync(path, 'utf8'), context, {filename: path})
     await tick()
     assert.equal(title.textContent, 'Suchbogen <Team>')
+    // Live-Polling: genau ein Intervall registriert, Status nach Poll mit Live-Zeitstempel
+    assert.equal(intervals.length, 1, 'Genau ein Poll-Intervall (setInterval) wird registriert.')
+    {
+        calls.length = 0
+        await intervals[0]() // unveränderter Zustand -> kein Re-Render, aber Live-Status
+        await tick()
+        assert.ok(calls.some(c => c.url.endsWith('/api/state')), 'Poll ruft /api/state ab.')
+        assert.match(status.textContent, /Live alle 10 s, zuletzt \d{2}:\d{2}:\d{2}/, 'Status zeigt Live-Aktualisierung mit letzter Poll-Uhrzeit.')
+        assert.match(status.textContent, /^Bereit\./, 'Basis-Status bleibt erhalten.')
+        // Änderung im State -> Re-Render (neue offene Schicht erscheint in der Sammelanzeige)
+        state.shifts.push({id: 4, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: '', starts_at: '2030-01-05T08:00:00Z', ends_at: '2030-01-05T12:00:00Z'})
+        await intervals[0]()
+        await tick()
+        assert.equal((searchSummary.innerHTML.match(/search-shift-chip/g) || []).length, 3, 'Geänderter Zustand wird live nachgerendert (3 offene Schichten).')
+        // Pausiert bei hidden / offenem Dialog / Feld-Fokus
+        calls.length = 0
+        document.hidden = true
+        await intervals[0](); await tick()
+        assert.ok(!calls.some(c => c.url.endsWith('/api/state')), 'Kein Poll bei hidden=true.')
+        document.hidden = false
+        document.querySelector = () => ({open: true})
+        await intervals[0](); await tick()
+        assert.ok(!calls.some(c => c.url.endsWith('/api/state')), 'Kein Poll bei offenem Dialog.')
+        document.querySelector = () => null
+        root.contains = () => true
+        document.activeElement = {tagName: 'INPUT'}
+        await intervals[0](); await tick()
+        assert.ok(!calls.some(c => c.url.endsWith('/api/state')), 'Kein Poll während ein Feld fokussiert ist.')
+        document.activeElement = null
+        delete root.contains
+        // visibilitychange -> sofortiger Poll
+        await (docListeners['visibilitychange'] || [])[0]()
+        await tick()
+        assert.ok(calls.some(c => c.url.endsWith('/api/state')), 'Sichtbarwerden löst sofortigen Poll aus.')
+        state.shifts = state.shifts.filter(shift => shift.id !== 4)
+        await intervals[0](); await tick()
+        assert.equal((searchSummary.innerHTML.match(/search-shift-chip/g) || []).length, 2, 'Wieder entfernter Zustand wird live nachgerendert (zurück auf 2 offene Schichten).')
+    }
     assert.equal(search.hidden, false)
     // Sammelanzeige aller offenen Schichten über der Tabelle
     assert.match(searchSummary.innerHTML, /search-shift-chip[^>]*>\d{2}\.\d{2}\. \d{2}:\d{2}–\d{2}:\d{2}/, 'Über der Tabelle werden alle offenen Schichten gesammelt angezeigt.')

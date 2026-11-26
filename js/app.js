@@ -39,6 +39,30 @@
         }
     }
     let state = {teams: [], shifts: [], permissions: {}}
+    // Live-Polling: die Akutvermittlung wird permanent von mehreren Personen bedient, deshalb wird der Zustand regelmäßig neu geladen (vgl. Nextcloud Calc). Pausiert bei verstecktem Tab, offenem Dialog oder Feld-Fokus; Re-Render nur bei geändertem Zustand.
+    const POLL_INTERVAL_MS = 10000
+    let lastStateSignature = ''
+    let statusBase = ''
+    const editingActive = () => {
+        const el = document.activeElement
+        return Boolean(el && /^(INPUT|TEXTAREA|SELECT)$/.test(String(el.tagName || '')) && (!root.contains || root.contains(el)))
+    }
+    const pollPaused = () => Boolean(document.hidden) || Boolean(document.querySelector && document.querySelector('dialog[open]')) || editingActive()
+    async function poll() {
+        if (pollPaused()) return
+        try {
+            const data = await api('/api/state')
+            const signature = JSON.stringify(data)
+            if (signature !== lastStateSignature) {
+                lastStateSignature = signature
+                state = data
+                render()
+            }
+            statusBase = data.providerStatus === 'AVAILABLE' ? 'Bereit.' : 'Planerdaten sind nicht verfügbar.'
+            const time = new Intl.DateTimeFormat(locale(), {timeZone: tz(), hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'}).format(new Date())
+            status.textContent = `${statusBase} · Live alle ${Math.round(POLL_INTERVAL_MS / 1000)} s, zuletzt ${time}`
+        } catch (error) { /* Poll-Fehler brechen die Live-Aktualisierung nicht ab */ }
+    }
     const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot', "'": '&#039;'}[character]))
     const url = path => OC.generateUrl('/apps/flz_akut' + path)
     const can = (capability, bureauKey) => Array.isArray(state.permissions?.[capability]) && state.permissions[capability].includes(bureauKey)
@@ -354,8 +378,10 @@
         try {
             const data = await api('/api/state')
             state = data
+            lastStateSignature = JSON.stringify(data)
             render()
-            status.textContent = data.providerStatus === 'AVAILABLE' ? 'Bereit.' : 'Planerdaten sind nicht verfügbar.'
+            statusBase = data.providerStatus === 'AVAILABLE' ? 'Bereit.' : 'Planerdaten sind nicht verfügbar.'
+            status.textContent = statusBase
         } catch (error) { status.textContent = error.message }
     }
 
@@ -620,4 +646,6 @@
         } catch (error) { status.textContent = error.message }
     })
     load()
+    if (typeof setInterval === 'function') setInterval(poll, POLL_INTERVAL_MS)
+    if (document.addEventListener) document.addEventListener('visibilitychange', () => { if (!document.hidden) poll() })
 })()
