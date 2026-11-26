@@ -245,12 +245,12 @@ async function searchScenario() {
     let smsShown = 0
     smsDialog.showModal = () => { smsShown++ }
     smsDialog.close = () => {}
-    const asinfoDialog = node(), asinfoForm = node(), asinfoTitle = node(), asinfoNote = node()
+    const asinfoDialog = node(), asinfoForm = node(), asinfoTitle = node(), asinfoNote = node(), asinfoEdit = node(), asinfoSave = node()
     let asinfoShown = 0, asinfoClosed = 0
     asinfoDialog.showModal = () => { asinfoShown++ }
     asinfoDialog.close = () => { asinfoClosed++ }
     asinfoForm.id = 'flz-akut-asinfo-form'
-    const tagInputs = [{value: 'tag', checked: false}, {value: 'nacht', checked: false}, {value: 'frueh', checked: false}]
+    const tagInputs = [{value: 'tag', checked: false, disabled: false}, {value: 'nacht', checked: false, disabled: false}, {value: 'frueh', checked: false, disabled: false}, {value: 'spaet', checked: false, disabled: false}]
     asinfoForm.querySelectorAll = selector => selector === 'input[name="asinfo-tag"]' ? tagInputs : (selector === 'input[name="asinfo-tag"]:checked' ? tagInputs.filter(t => t.checked) : [])
     const actionDialog = node(), actionForm = node(), actionTitle = node(), actionFields = node(), actionClose = node()
     actionDialog.showModal = () => {}
@@ -259,7 +259,7 @@ async function searchScenario() {
     actionForm.elements = {}
     actionForm.reset = () => {}
     actionForm.querySelector = () => null
-    const nodes = {'flz-akut-app': root, 'flz-akut-status': status, 'flz-akut-search-sheet': search, 'search-sheet-title': title, 'flz-akut-search-head': searchHead, 'flz-akut-search-body': searchBody, 'flz-akut-search-summary': searchSummary, 'flz-akut-manual-input': manualInput, 'flz-akut-sms-dialog': smsDialog, 'flz-akut-sms-text': smsText, 'flz-akut-asinfo-dialog': asinfoDialog, 'flz-akut-asinfo-form': asinfoForm, 'flz-akut-asinfo-title': asinfoTitle, 'flz-akut-asinfo-note': asinfoNote, 'flz-akut-action-dialog': actionDialog, 'flz-akut-action-form': actionForm, 'flz-akut-action-title': actionTitle, 'flz-akut-action-fields': actionFields, 'flz-akut-action-close': actionClose}
+    const nodes = {'flz-akut-app': root, 'flz-akut-status': status, 'flz-akut-search-sheet': search, 'search-sheet-title': title, 'flz-akut-search-head': searchHead, 'flz-akut-search-body': searchBody, 'flz-akut-search-summary': searchSummary, 'flz-akut-manual-input': manualInput, 'flz-akut-sms-dialog': smsDialog, 'flz-akut-sms-text': smsText, 'flz-akut-asinfo-dialog': asinfoDialog, 'flz-akut-asinfo-form': asinfoForm, 'flz-akut-asinfo-title': asinfoTitle, 'flz-akut-asinfo-note': asinfoNote, 'flz-akut-asinfo-edit': asinfoEdit, 'flz-akut-asinfo-save': asinfoSave, 'flz-akut-action-dialog': actionDialog, 'flz-akut-action-form': actionForm, 'flz-akut-action-title': actionTitle, 'flz-akut-action-fields': actionFields, 'flz-akut-action-close': actionClose}
     const calls = []
     const state = {ok: true, providerStatus: 'AVAILABLE', mailTemplate: '{shifts}', timezone: 'Europe/Berlin', capacities: [{uid: 'as1', day: '2030-01-01', restriction: '', note: 'alles'}, {uid: 'as1', day: '2030-01-02', restriction: 'nacht', note: 'nur nachts'}, {uid: 'as1', day: '2030-01-03', restriction: 'tag', note: null}, {uid: 'as2', day: '2030-01-01', restriction: '', note: null}], contacts: [{id: 9, shiftId: 1, assistantUid: 'as1', channel: 'phone', outcome: 'ab', contactedAt: '2030-01-01T09:30:00+00:00'}], absences: [{uid: 'as1', startsAt: '2029-12-31T00:00:00+00:00', endsAt: '2030-01-02T00:00:00+00:00', status: 'approved', label: 'Urlaub'}], teams: [{teamCode: 'T1', bureauKey: 'west', displayName: '<Team>', assistants: [{uid: 'as1', displayName: 'A & B', info: {tags: ['nacht'], note: 'nur nachts'}, comment: 'bevorzugt Vormittag'}]}, {teamCode: 'T2', bureauKey: 'east', displayName: 'Other', assistants: [{uid: 'as2', displayName: 'Vertretung V'}]}], permissions: {contact: ['west']}, shifts: [{id: 1, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: 'sz', starts_at: '2030-01-01T10:00:00Z', ends_at: '2030-01-01T12:00:00Z'}, {id: 2, team_code: 'T1', bureau_key: 'west', state: 'open', urgency: '', starts_at: '2030-01-02T22:00:00Z', ends_at: '2030-01-03T06:00:00Z'}, {id: 3, team_code: 'T1', bureau_key: 'west', state: 'mediated', urgency: '', starts_at: '2030-01-04T10:00:00Z', ends_at: '2030-01-04T12:00:00Z', assigned_uid: 'as1'}]}
     const context = {document: {getElementById: id => nodes[id]}, location: {search: '?team=T1'}, URLSearchParams, Date, OC: {requestToken: 'synthetic-token', generateUrl: path => path, getCurrentUser: () => ({uid: 'dispo', displayName: 'Tom Dispatcher'})}, window: {open: () => null}, FormData: class {get() { return null }}, fetch: async (url, options) => { calls.push({url, options}); if (url.endsWith('/api/state')) return response(state); if (url.endsWith('/contacts')) { const body = JSON.parse(options.body); return response({ok: true, attempt: {id: 100 + calls.length, shift_id: Number((url.match(/\/shifts\/(\d+)\/contacts/) || [])[1]), assistant_uid: body.assistantUid, channel: body.channel, outcome: body.outcome, contacted_at: body.contactedAt, reason: null, note: null}}) } if (url.includes('/assistants/') && url.endsWith('/meta')) { const body = JSON.parse(options.body); const info = body.tagsJson !== undefined ? {tags: JSON.parse(body.tagsJson), note: body.note ?? ''} : {tags: ['nacht'], note: 'nur nachts'}; return response({ok: true, info, comment: body.comment ?? 'bevorzugt Vormittag'}) } return response({ok: true}) }}
@@ -278,7 +278,7 @@ async function searchScenario() {
     // Besetzte Schicht verschwindet aus dem Suchbogen
     assert.ok(!searchHead.innerHTML.includes('04.01.') && !searchBody.innerHTML.includes('data-id="3"'), 'Vermittelte (besetzte) Schichten erscheinen nicht im Suchbogen.')
     // Nur Team-Assistentinnen als Zeilen; Urlaubs-Badge wegen bekannter Abwesenheit
-    assert.match(searchBody.innerHTML, /<th class="sticky-left">A &amp; B <span class="absence-badge"[^>]*>Urlaub<\/span><span class="as-info"/, 'Urlaub wird markiert, wenn eine Abwesenheit überlappt.')
+    assert.match(searchBody.innerHTML, /<th class="sticky-left">A &amp; B <span class="absence-badge"[^>]*>Urlaub<\/span><button type="button" class="as-info"/, 'Urlaub wird markiert, wenn eine Abwesenheit überlappt.')
     assert.ok(!searchBody.innerHTML.includes('Vertretung V'), 'Nur Assistentinnen des Teams werden als Zeilen geführt.')
     // Ja/Nein sitzen in jeder Schicht-Zelle und buchen genau diese Schicht
     for (const id of ['1', '2']) {
@@ -296,7 +296,7 @@ async function searchScenario() {
     // Manuelle AS-Zeile ergänzen und wieder entfernen
     manualInput.value = 'as99'
     await root.handlers.click({target: {closest: selector => selector === '#flz-akut-manual-add' ? {} : null}})
-    assert.match(searchBody.innerHTML, /<th class="sticky-left">as99 <span class="as-info"|<th class="sticky-left">as99/, 'Manuell ergänzte AS-Zeile erscheint im Suchbogen.')
+    assert.match(searchBody.innerHTML, /<th class="sticky-left">as99 <button type="button" class="as-info"|<th class="sticky-left">as99/, 'Manuell ergänzte AS-Zeile erscheint im Suchbogen.')
     assert.match(searchBody.innerHTML, /data-action="manual-remove" data-uid="as99"/, 'Manuelle Zeile hat Entfernen-Button.')
     assert.match(searchBody.innerHTML, /data-action="contact-yes" data-id="1" data-uid="as99"/, 'Manuelle Zeile hat Ja/Nein je offener Schicht.')
     await root.handlers.click({target: {closest: selector => selector === 'button[data-action]' ? {dataset: {action: 'manual-remove', uid: 'as99'}} : null}})
@@ -345,17 +345,28 @@ async function searchScenario() {
     assert.match(smsText.value, /- 01\.01\. 11–13 Uhr\n- 02\.01\. 23–7 Uhr/, 'SMS listet die offenen Schichten kompakt (volle Stunden ohne :00-Minuten).')
     assert.ok(smsText.value.length <= 160, `SMS-Vorschlag bleibt unter 160 Zeichen (${smsText.value.length}).`)
     assert.match(smsText.value, /\nLG Tom$/, 'SMS endet mit LG <Vorname der eingeloggten Person>.')
-    // Info-Icon je AS: Hover (title) zeigt die AS-Info, Stift-Button öffnet das Overlay
-    assert.match(searchBody.innerHTML, /<span class="as-info" title="AS-Info: nur Nacht — nur nachts"><svg class="as-info-icon"/, 'Info-Icon zeigt per Hover die gespeicherte AS-Info.')
-    assert.match(searchBody.innerHTML, /<button type="button" class="as-info-edit" data-action="as-info" data-uid="as1"[^>]*>/, 'Stift-Button je AS zum Bearbeiten der Info.')
+    // Info-Icon je AS: klickbarer Button mit Hover-Titel (größere Ikone via CSS)
+    assert.match(searchBody.innerHTML, /<button type="button" class="as-info" data-action="as-info" data-uid="as1" title="AS-Info: nur Nacht — nur nachts"[^>]*><svg class="as-info-icon"/, 'Info-Icon ist klickbarer Button mit Hover-Titel.')
     // Kommentarspalte rechts fixiert mit vorbefülltem Textfeld
     assert.match(searchBody.innerHTML, /<td class="sticky-right sticky-comment"><input type="text" class="as-comment" data-field="asComment" data-uid="as1" value="bevorzugt Vormittag"/, 'Kommentarfeld ist mit dem beim AS-Nutzer gespeicherten Kommentar vorbefüllt.')
-    // Stift öffnet das Overlay mit vorbefüllten Werten
+    // Klick auf das Info-Icon öffnet das Overlay — im Normalzustand schreibgeschützt
     await root.handlers.click({target: {closest: selector => selector === 'button[data-action]' ? {dataset: {action: 'as-info', uid: 'as1'}} : null}})
-    assert.equal(asinfoShown, 1, 'Stift öffnet das AS-Info-Overlay.')
+    assert.equal(asinfoShown, 1, 'Info-Icon öffnet das AS-Info-Overlay.')
     assert.equal(asinfoTitle.textContent, 'AS-Info A & B')
-    assert.deepEqual(tagInputs.map(t => t.value + '=' + t.checked), ['tag=false', 'nacht=true', 'frueh=false'], 'Overlay ist mit der gespeicherten Info vorbefüllt.')
+    assert.deepEqual(tagInputs.map(t => t.value + '=' + t.checked), ['tag=false', 'nacht=true', 'frueh=false', 'spaet=false'], 'Overlay ist mit der gespeicherten Info vorbefüllt (inkl. nur Spät).')
     assert.equal(asinfoNote.value, 'nur nachts', 'Freitext ist vorbefüllt.')
+    assert.ok(tagInputs.every(t => t.disabled), 'Overlay startet schreibgeschützt (Tags deaktiviert).')
+    assert.equal(asinfoNote.disabled, true, 'Freitext ist deaktiviert.')
+    assert.equal(asinfoSave.disabled, true, 'Speichern ist deaktiviert.')
+    assert.equal(asinfoEdit.disabled, false, 'Stift-Button im Overlay ist aktiv.')
+    // Submit ohne Edit-Modus darf nichts senden
+    { const before = calls.length; await asinfoForm.handlers.submit({preventDefault() {}}); assert.equal(calls.length, before, 'Submit im schreibgeschützten Modus sendet nichts.') }
+    // Stift im Overlay schaltet die Bearbeitung frei
+    await root.handlers.click({target: {closest: selector => selector === '#flz-akut-asinfo-edit' ? {} : null}})
+    assert.ok(tagInputs.every(t => !t.disabled), 'Nach Stift-Klick sind die Tags bearbeitbar.')
+    assert.equal(asinfoNote.disabled, false, 'Nach Stift-Klick ist der Freitext bearbeitbar.')
+    assert.equal(asinfoSave.disabled, false, 'Nach Stift-Klick ist Speichern aktiv.')
+    assert.equal(asinfoEdit.disabled, true, 'Stift-Button ist im Edit-Modus deaktiviert.')
     // Info bearbeiten und speichern: ein PUT meta mit tagsJson + note, danach Hover aktualisiert
     tagInputs[0].checked = true
     asinfoNote.value = 'nur nachts, montags'

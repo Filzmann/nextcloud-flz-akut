@@ -9,14 +9,14 @@
 .sticky-sms{right:var(--flz-comment-w);width:var(--flz-sms-w)}
 .sticky-tel{right:calc(var(--flz-comment-w) + var(--flz-sms-w))}
 .sticky-tel,.sticky-sms,.contact-check,.as-info{white-space:nowrap}
-.contact-check{display:inline-flex;align-items:center;gap:2px;margin:0 4px 2px 0;font-size:.85em}
+#flz-akut-app label.contact-check{display:inline-flex;flex-direction:row;align-items:center;gap:2px;margin:0 4px 2px 0;font-size:.85em;white-space:nowrap}
 #flz-akut-search-sheet th,#flz-akut-search-sheet td{padding:2px 4px;line-height:1.25}
 .shift-contact button{margin:0 2px 2px 0;padding:1px 4px;font-size:.75em}
 .as-comment{width:100%;box-sizing:border-box}
-.as-info{display:inline-flex;align-items:center;gap:2px;margin-left:4px;vertical-align:middle}
-.as-info-icon{width:14px;height:14px;fill:var(--color-text-maxcontrast)}
-.as-info-edit{padding:0 2px}
-.as-info-edit svg{width:12px;height:12px;fill:var(--color-text-maxcontrast)}
+#flz-akut-app button.as-info{display:inline-flex;align-items:center;gap:2px;margin-left:4px;padding:0;border:none;background:transparent;cursor:pointer;vertical-align:middle}
+.as-info-icon{width:20px;height:20px;fill:var(--color-text-maxcontrast)}
+#flz-akut-asinfo-edit{padding:2px 4px}
+#flz-akut-asinfo-edit svg{width:16px;height:16px;fill:var(--color-text-maxcontrast)}
 #flz-akut-asinfo-dialog{border:1px solid var(--color-border);border-radius:var(--border-radius-large);padding:16px;width:min(480px,calc(100% - 48px));background:var(--color-main-background)}
 #flz-akut-asinfo-dialog::backdrop{background:rgba(0,0,0,.45)}
 #flz-akut-asinfo-dialog:not([open]){display:none}

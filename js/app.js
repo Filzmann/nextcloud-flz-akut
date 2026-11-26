@@ -79,7 +79,7 @@
     // Kurze Zeit für SMS: volle Stunden ohne Minuten (10:00 -> 10)
     const fmtTimeShort = value => { const t = fmtTime(value); return t.endsWith(':00') ? t.slice(0, -3).replace(/^0(?=\d)/, '') : t }
     const firstName = name => { const first = String(name || '').trim().split(/\s+/)[0]; return first || String(name || '') }
-    const TAG_LABELS = {tag: 'nur Tag', nacht: 'nur Nacht', frueh: 'nur Früh'}
+    const TAG_LABELS = {tag: 'nur Tag', nacht: 'nur Nacht', frueh: 'nur Früh', spaet: 'nur Spät'}
     // Hover-Text des AS-Info-Icons: Verfügbarkeit + Freitext
     function infoTitleText(assistant) {
         const info = assistant.info || {tags: [], note: ''}
@@ -243,7 +243,8 @@
             const smsCell = !canContact ? '<td class="sticky-right sticky-sms">—</td>' : `<td class="sticky-right sticky-sms">${contactCheckbox('sms', 'SMS', assistant.uid, c => c.channel === 'sms')}</td>`
             // Info-Icon je AS (Hover zeigt die Info, Stift öffnet das Bearbeitungs-Overlay); Kommentarfeld rechts für interne Notizen
             const infoTitle = infoTitleText(assistant)
-            const infoIcon = canContact ? `<span class="as-info" title="${esc(infoTitle)}"><svg class="as-info-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><button type="button" class="as-info-edit" data-action="as-info" data-uid="${esc(assistant.uid)}" title="AS-Info bearbeiten (${esc(infoTitle)})" aria-label="AS-Info bearbeiten für ${esc(assistant.displayName)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button></span>` : ''
+            // Info-Icon (größer, klickbar) öffnet das Overlay direkt; das Overlay ist normal schreibgeschützt, der Stift-Button im Overlay schaltet die Bearbeitung frei
+            const infoIcon = canContact ? `<button type="button" class="as-info" data-action="as-info" data-uid="${esc(assistant.uid)}" title="${esc(infoTitle)}" aria-label="AS-Info anzeigen für ${esc(assistant.displayName)}"><svg class="as-info-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></button>` : ''
             const commentCell = !canContact ? '<td class="sticky-right sticky-comment">—</td>' : `<td class="sticky-right sticky-comment"><input type="text" class="as-comment" data-field="asComment" data-uid="${esc(assistant.uid)}" value="${esc(assistant.comment || '')}" maxlength="2000" title="Interner Kommentar zu ${esc(assistant.displayName)}" aria-label="Interner Kommentar zu ${esc(assistant.displayName)}"></td>`
             const manualRemove = manualRows.some(row => row.uid === assistant.uid) ? `<button type="button" class="manual-remove" data-action="manual-remove" data-uid="${esc(assistant.uid)}" title="Manuelle Zeile entfernen" aria-label="Manuelle Zeile ${esc(assistant.displayName)} entfernen">Entf.</button>` : ''
             return `<tr><th class="sticky-left">${esc(assistant.displayName)}${badge}${infoIcon}${manualRemove}</th>${shifts.map(shiftCell).join('')}${telCell}${smsCell}${commentCell}</tr>`
@@ -304,6 +305,16 @@
     }
 
     let asInfoUid = null
+    let asInfoEditMode = false
+    const asinfoEdit = document.getElementById('flz-akut-asinfo-edit')
+    const asinfoSave = document.getElementById('flz-akut-asinfo-save')
+    function setAsInfoEditable(editable) {
+        asInfoEditMode = editable
+        for (const input of Array.from(asinfoForm ? asinfoForm.querySelectorAll('input[name="asinfo-tag"]') : [])) input.disabled = !editable
+        if (asinfoNote) { asinfoNote.disabled = !editable; asinfoNote.readOnly = !editable }
+        if (asinfoSave) asinfoSave.disabled = !editable
+        if (asinfoEdit) asinfoEdit.disabled = editable
+    }
     function openAsInfoDialog(uid) {
         asInfoUid = uid
         const selectedTeam = team(searchTeamCode)
@@ -313,12 +324,13 @@
         if (asinfoTitle) asinfoTitle.textContent = 'AS-Info ' + assistant.displayName
         for (const input of Array.from(asinfoForm.querySelectorAll('input[name="asinfo-tag"]'))) input.checked = (info.tags || []).includes(input.value)
         if (asinfoNote) asinfoNote.value = info.note || ''
+        setAsInfoEditable(false) // Overlay startet schreibgeschützt; Stift-Button im Overlay schaltet frei
         asinfoDialog.showModal()
     }
 
     if (asinfoForm) asinfoForm.addEventListener('submit', async event => {
         event.preventDefault()
-        if (!asInfoUid) return
+        if (!asInfoUid || !asInfoEditMode) return
         const tags = Array.from(asinfoForm.querySelectorAll('input[name="asinfo-tag"]:checked')).map(input => input.value)
         const note = asinfoNote ? asinfoNote.value : ''
         try {
@@ -538,6 +550,7 @@
         if (event.target.closest('#flz-akut-mail-close')) { if (mailDialog) mailDialog.close(); return }
         if (event.target.closest('#flz-akut-sms-close')) { if (smsDialog) smsDialog.close(); return }
         if (event.target.closest('#flz-akut-asinfo-close')) { if (asinfoDialog) asinfoDialog.close(); return }
+        if (event.target.closest('#flz-akut-asinfo-edit')) { setAsInfoEditable(true); if (asinfoNote) asinfoNote.focus(); return }
         if (event.target.closest('#flz-akut-sms-copy')) {
             const text = smsText ? smsText.value : ''
             if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {

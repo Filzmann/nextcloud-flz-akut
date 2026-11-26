@@ -27,10 +27,12 @@ namespace {
     }
     // Roundtrip mit Tag-Filterung
     $info = $service->saveInfo('as1', ['nacht', 'bogus', 'tag'], 'Nur nachts');
+    $info2 = $service->saveInfo('as1', ['spaet', 'frueh', 'bogus'], 'Nur spät');
+    if ($info2['tags'] !== ['spaet', 'frueh']) throw new RuntimeException('Tag nur Spät (spaet) muss erlaubt und einsortiert werden: ' . json_encode($info2));
     if ($info !== ['tags' => ['nacht', 'tag'], 'note' => 'Nur nachts']) {
         throw new RuntimeException('Tags müssen auf die zulässigen Werte gefiltert werden.');
     }
-    if ($service->info('as1') !== $info) {
+    if ($service->info('as1') !== $info2) {
         throw new RuntimeException('Die gespeicherte Info muss direkt beim AS-Nutzer wieder lesbar sein.');
     }
     // Längenkappe

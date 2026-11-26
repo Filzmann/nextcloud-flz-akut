@@ -7,14 +7,14 @@ namespace OCA\FlzAkut\Service;
 use OCP\Config\IUserConfig;
 
 /**
- * AS-Info (Verfügbarkeit: nur Tag / nur Nacht / nur Früh + Freitext) und interner
+ * AS-Info (Verfügbarkeit: nur Tag / nur Nacht / nur Früh / nur Spät + Freitext) und interner
  * Kommentar werden direkt beim AS-Nutzer in der nativen Nextcloud-UserConfig gespeichert.
  */
 final class AssistantInfoService {
     public const APP_ID = 'flz_akut';
     public const KEY_INFO = 'as_info';
     public const KEY_COMMENT = 'as_comment';
-    public const TAGS = ['tag', 'nacht', 'frueh'];
+    public const TAGS = ['tag', 'nacht', 'frueh', 'spaet'];
     public const MAX_NOTE = 1000;
     public const MAX_COMMENT = 2000;
 
