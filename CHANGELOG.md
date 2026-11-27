@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- L10N-Migration (ZM-06): sichtbare Texte über Nextcloud-l10n (deutsche Quelltexte, Kataloge `l10n/en.*` + `l10n/en_GB.*`), inkl. `tests/Ui/L10nCatalogContractTest.php` und `docs/l10n-inventory.md`.
+
 - Live-Polling: `js/app.js` pollt `GET /api/state` alle 10 s (`POLL_INTERVAL_MS`, `setInterval`), pausiert bei verstecktem Tab (`document.hidden`), offenem `dialog[open]` oder fokussiertem Eingabefeld innerhalb des App-Roots und pollt sofort nach (`visibilitychange`). Re-Render nur bei geändertem Zustand (JSON-Signatur-Vergleich); der Status zeigt zusätzlich `· Live alle 10 s, zuletzt HH:MM:SS` (Instanz-Zeitzone). Damit sehen permanent besetzte Vermittlungstische neue Lücken, Vermittlungen und Kommentare ohne manuelles Neuladen.
 - Fix: `IUserConfig::getUsersForUserValue()` existiert in NC 34 nicht — Kürzel-Eindeutigkeit jetzt über `searchUsersByValueString()` auf den normalisierten Schlüssel (MaKuerzelService); PUT `/api/profile/kuerzel` lieferte dadurch 503 statt zu speichern.
 - 503-Catch-all in ProfileController loggt Exceptions strukturiert (Psr\Log\LoggerInterface) statt sie still zu schlucken.

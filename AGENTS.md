@@ -23,6 +23,8 @@ Die App ist Kategorie B mit begründeten, versionierten read-only Laufzeitabhän
 
 ## Tests und Abschluss
 
+- Lokalisierung (ZM-06): Sichtbare Texte ausschließlich über Nextcloud-l10n — deutsche Quelltexte via `IL10N::t()`/`window.t('flz_akut', …)`, Kataloge `l10n/en.*` und `l10n/en_GB.*` (Englisch); technische IDs bleiben unübersetzt. `tests/Ui/L10nCatalogContractTest.php` erzwingt das Rohtext-Gate (siehe `docs/l10n-inventory.md`).
+
 Schnelle PHP-Suite: `php tests/run.php`. JavaScript-Suite: `node tests/run-js.mjs`. DDEV-/`occ`-Änderungen, Commit, Push, Release und Deployment benötigen ausdrückliche Freigabe. Abschlussberichte nennen geänderte Dateien, ausgeführte und ausgelassene Checks, Risiken und den Git-Status.
 
 ## Dokumentenverantwortung

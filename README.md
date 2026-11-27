@@ -34,6 +34,7 @@ tests/browser-ddev-smoke.sh
 ## Dokumentation
 
 - [Architektur](docs/architecture.md)
+- [Lokalisierungsinventar](docs/l10n-inventory.md)
 - [Manuelle Abnahme](docs/manual-acceptance.md)
 - [Offene Arbeit](ROADMAP.md)
 - [Änderungen](CHANGELOG.md)

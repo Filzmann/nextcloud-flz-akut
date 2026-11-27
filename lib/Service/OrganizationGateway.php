@@ -74,7 +74,7 @@ class OrganizationGateway
         }
         catch (Throwable $error)
         {
-            $this->logger->warning('Akut organization provider unavailable', [
+            $this->logger->warning('Akut-Organisations-Provider ist nicht verfügbar.', [
                 'app' => 'flz_akut',
                 'provider' => 'flz_organization',
                 'exception_class' => $error::class,

@@ -80,7 +80,7 @@ final class HolidayGateway
         }
         catch (Throwable $error)
         {
-            $this->logger->warning('Akut holiday provider unavailable', [
+            $this->logger->warning('Akut-Feiertags-Provider ist nicht verfügbar.', [
                 'app' => 'flz_akut',
                 'provider' => 'flz_organization',
                 'exception_class' => $error::class,

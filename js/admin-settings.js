@@ -1,3 +1,6 @@
+'use strict'
+const translate = typeof window.t === 'function' ? window.t : (_app, text, params) => Object.entries(params || {}).reduce((s, [k, v]) => s.split('{' + k + '}').join(String(v)), text)
+
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('flz-akut-permission-settings')
     const status = document.getElementById('flz-akut-permission-settings-status')
@@ -9,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = new FormData(form)
         const permissions = {}
         for (const capability of capabilities) permissions[capability] = data.getAll(`${capability}[]`).map(String)
-        if (status) status.textContent = 'Berechtigungen werden gespeichert …'
+        if (status) status.textContent = translate('flz_akut', 'Berechtigungen werden gespeichert …')
         try {
             const response = await fetch(OC.generateUrl('/apps/flz_akut/api/admin/permissions'), {
                 method: 'PUT',
@@ -17,10 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({permissions}),
             })
             const result = await response.json()
-            if (!response.ok) throw new Error(result.error || 'Die Akutberechtigungen konnten nicht gespeichert werden.')
-            if (status) status.textContent = 'Die Akutberechtigungen wurden gespeichert.'
+            if (!response.ok) throw new Error(result.error || translate('flz_akut', 'Die Akutberechtigungen konnten nicht gespeichert werden.'))
+            if (status) status.textContent = translate('flz_akut', 'Die Akutberechtigungen wurden gespeichert.')
         } catch (error) {
-            if (status) status.textContent = error instanceof Error ? error.message : 'Die Akutberechtigungen konnten nicht gespeichert werden.'
+            if (status) status.textContent = error instanceof Error ? error.message : translate('flz_akut', 'Die Akutberechtigungen konnten nicht gespeichert werden.')
         }
     })
 
@@ -29,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (officeDayForm) officeDayForm.addEventListener('submit', async event => {
         event.preventDefault()
         const data = new FormData(officeDayForm)
-        if (officeDayStatus) officeDayStatus.textContent = 'Der Bürotagbeginn wird gespeichert …'
+        if (officeDayStatus) officeDayStatus.textContent = translate('flz_akut', 'Der Bürotagbeginn wird gespeichert …')
         try {
             const response = await fetch(OC.generateUrl('/apps/flz_akut/api/admin/office-day-start'), {
                 method: 'PUT',
@@ -37,10 +40,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({officeDayStart: String(data.get('officeDayStart') || '')}),
             })
             const result = await response.json()
-            if (!response.ok || result.ok === false) throw new Error(result.error || 'Der Bürotagbeginn konnte nicht gespeichert werden.')
-            if (officeDayStatus) officeDayStatus.textContent = 'Der Bürotagbeginn wurde gespeichert.'
+            if (!response.ok || result.ok === false) throw new Error(result.error || translate('flz_akut', 'Der Bürotagbeginn konnte nicht gespeichert werden.'))
+            if (officeDayStatus) officeDayStatus.textContent = translate('flz_akut', 'Der Bürotagbeginn wurde gespeichert.')
         } catch (error) {
-            if (officeDayStatus) officeDayStatus.textContent = error instanceof Error ? error.message : 'Der Bürotagbeginn konnte nicht gespeichert werden.'
+            if (officeDayStatus) officeDayStatus.textContent = error instanceof Error ? error.message : translate('flz_akut', 'Der Bürotagbeginn konnte nicht gespeichert werden.')
         }
     })
 
@@ -49,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (templateForm) templateForm.addEventListener('submit', async event => {
         event.preventDefault()
         const data = new FormData(templateForm)
-        if (templateStatus) templateStatus.textContent = 'Die Mail-Vorlage wird gespeichert …'
+        if (templateStatus) templateStatus.textContent = translate('flz_akut', 'Die Mail-Vorlage wird gespeichert …')
         try {
             const response = await fetch(OC.generateUrl('/apps/flz_akut/api/admin/mail-template'), {
                 method: 'PUT',
@@ -57,10 +60,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({template: String(data.get('template') || '')}),
             })
             const result = await response.json()
-            if (!response.ok || result.ok === false) throw new Error(result.error || 'Die Mail-Vorlage konnte nicht gespeichert werden.')
-            if (templateStatus) templateStatus.textContent = 'Die Mail-Vorlage wurde gespeichert.'
+            if (!response.ok || result.ok === false) throw new Error(result.error || translate('flz_akut', 'Die Mail-Vorlage konnte nicht gespeichert werden.'))
+            if (templateStatus) templateStatus.textContent = translate('flz_akut', 'Die Mail-Vorlage wurde gespeichert.')
         } catch (error) {
-            if (templateStatus) templateStatus.textContent = error instanceof Error ? error.message : 'Die Mail-Vorlage konnte nicht gespeichert werden.'
+            if (templateStatus) templateStatus.textContent = error instanceof Error ? error.message : translate('flz_akut', 'Die Mail-Vorlage konnte nicht gespeichert werden.')
         }
     })
 })

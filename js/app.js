@@ -1,5 +1,7 @@
 (function () {
     'use strict'
+    const translate = typeof window.t === 'function' ? window.t : (_app, text, params) => Object.entries(params || {}).reduce((s, [k, v]) => s.split('{' + k + '}').join(String(v)), text)
+
     const root = document.getElementById('flz-akut-app')
     if (!root) return
     const status = document.getElementById('flz-akut-status')
@@ -24,7 +26,7 @@
 
     function rowHtml(values, index) {
         const options = state.teams.map(item => `<option value="${esc(item.teamCode)}" data-bureau="${esc(item.bureauKey)}" ${values.teamCode === item.teamCode ? 'selected' : ''} ${can('create', item.bureauKey) ? '' : 'disabled'}>${esc(item.displayName)}</option>`).join('')
-        return `<tr><td><select name="teamCode" aria-label="ASN-Team Zeile ${index + 1}">${options}</select></td><td><input name="date" type="date" required value="${esc(values.date || '')}"></td><td><input name="startTime" type="time" required value="${esc(values.startTime || '')}"></td><td><input name="endTime" type="time" required value="${esc(values.endTime || '')}"></td><td><input name="comment" maxlength="2000" value="${esc(values.comment || '')}"></td><td><button type="button" data-row-remove data-index="${index}" aria-label="Zeile ${index + 1} entfernen">Entfernen</button></td></tr>`
+        return `<tr><td><select name="teamCode" aria-label="${translate('flz_akut', 'ASN-Team Zeile {n}', {n: index + 1})}">${options}</select></td><td><input name="date" type="date" required value="${esc(values.date || '')}"></td><td><input name="startTime" type="time" required value="${esc(values.startTime || '')}"></td><td><input name="endTime" type="time" required value="${esc(values.endTime || '')}"></td><td><input name="comment" maxlength="2000" value="${esc(values.comment || '')}"></td><td><button type="button" data-row-remove data-index="${index}" aria-label="${translate('flz_akut', 'Zeile {n} entfernen', {n: index + 1})}">${translate('flz_akut', 'Entfernen')}</button></td></tr>`
     }
 
     function renderRows(values) { rowsBody.innerHTML = values.map((values, index) => rowHtml(values, index)).join('') }
@@ -58,7 +60,7 @@
                 state = data
                 render()
             }
-            statusBase = data.providerStatus === 'AVAILABLE' ? 'Bereit.' : 'Planerdaten sind nicht verfügbar.'
+            statusBase = data.providerStatus === 'AVAILABLE' ? translate('flz_akut', 'Bereit.') : translate('flz_akut', 'Planerdaten sind nicht verfügbar.')
             const time = new Intl.DateTimeFormat(locale(), {timeZone: tz(), hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'}).format(new Date())
             status.textContent = `${statusBase} · Live alle ${Math.round(POLL_INTERVAL_MS / 1000)} s, zuletzt ${time}`
         } catch (error) { /* Poll-Fehler brechen die Live-Aktualisierung nicht ab */ }
@@ -82,15 +84,15 @@
     async function api(path, options = {}) {
         const response = await fetch(url(path), {credentials: 'same-origin', headers: {'Content-Type': 'application/json', requesttoken: OC.requestToken}, ...options})
         const data = await response.json()
-        if (!response.ok || data.ok === false) throw new Error(data.error || 'Aktion fehlgeschlagen.')
+        if (!response.ok || data.ok === false) throw new Error(data.error || translate('flz_akut', 'Aktion fehlgeschlagen.'))
         return data
     }
 
     function team(code) { return state.teams.find(item => item.teamCode === code) }
     function urgency(shift) {
-        if (shift.urgency === 'sz') return ['urgency-sz', 'SZ – heute bis nächster Büroarbeitstag']
-        if (shift.urgency === 'week') return ['urgency-week', 'Offene Schicht innerhalb der kommenden Woche']
-        if (shift.urgency === 'unavailable') return ['', 'SZ-Prüfung nicht verfügbar']
+        if (shift.urgency === 'sz') return ['urgency-sz', translate('flz_akut', 'SZ – heute bis nächster Büroarbeitstag')]
+        if (shift.urgency === 'week') return ['urgency-week', translate('flz_akut', 'Offene Schicht innerhalb der kommenden Woche')]
+        if (shift.urgency === 'unavailable') return ['', translate('flz_akut', 'SZ-Prüfung nicht verfügbar')]
         return ['', 'Keine besondere Dringlichkeitsmarkierung']
     }
     function actionButton(capability, bureauKey, action, id, label, title = '', pressed = false) {
@@ -103,13 +105,13 @@
     // Kurze Zeit für SMS: volle Stunden ohne Minuten (10:00 -> 10)
     const fmtTimeShort = value => { const t = fmtTime(value); return t.endsWith(':00') ? t.slice(0, -3).replace(/^0(?=\d)/, '') : t }
     const firstName = name => { const first = String(name || '').trim().split(/\s+/)[0]; return first || String(name || '') }
-    const TAG_LABELS = {tag: 'nur Tag', nacht: 'nur Nacht', frueh: 'nur Früh', spaet: 'nur Spät'}
+    const TAG_LABELS = {tag: translate('flz_akut', 'nur Tag'), nacht: translate('flz_akut', 'nur Nacht'), frueh: translate('flz_akut', 'nur Früh'), spaet: translate('flz_akut', 'nur Spät')}
     // Hover-Text des AS-Info-Icons: Verfügbarkeit + Freitext
     function infoTitleText(assistant) {
         const info = assistant.info || {tags: [], note: ''}
         const tags = (info.tags || []).map(tag => TAG_LABELS[tag] || tag).join(', ')
         const note = info.note ? ` — ${info.note}` : ''
-        return tags || note ? `AS-Info: ${tags}${note}` : 'Keine AS-Info hinterlegt'
+        return tags || note ? translate('flz_akut', 'AS-Info: {tags}{note}', {tags: tags, note: note}) : translate('flz_akut', 'Keine AS-Info hinterlegt')
     }
     // Vorname/Spitzname der eingeloggten Person als Absender-Signatur
     function senderName() {
@@ -183,9 +185,9 @@
         if (!cap) return ''
         const parts = String(cap.day).split('-')
         const r = String(cap.restriction || '')
-        const label = r === '' ? 'alle Schichten' : r.split(',').map(p => ({frueh: 'Früh', spaet: 'Spät', tag: 'Tag', nacht: 'Nacht'})[p] || p).join(' + ')
+        const label = r === '' ? translate('flz_akut', 'alle Schichten') : r.split(',').map(p => ({frueh: translate('flz_akut', 'Früh'), spaet: translate('flz_akut', 'Spät'), tag: translate('flz_akut', 'Tag'), nacht: translate('flz_akut', 'Nacht')})[p] || p).join(' + ')
         const letter = r === '' ? '•' : r.split(',').map(p => ({frueh: 'F', spaet: 'S', tag: 'T', nacht: 'N'})[p] || '?').join('+')
-        return `<span class="capacity-badge" title="Kapazität ${parts[2]}.${parts[1]}.${parts[0]} (${label})${cap.note ? ' – ' + esc(cap.note) : ''}">${letter}</span>`
+        return `<span class="capacity-badge" title="${translate('flz_akut', 'Kapazität {date} ({label}){note}', {date: parts[2] + '.' + parts[1] + '.' + parts[0], label: label, note: cap.note ? ' – ' + esc(cap.note) : ''})}">${letter}</span>`
     }
 
     // Split-Ursprünge und Schichten, die vor Bürotagbeginn (konfiguriert, Standard 6:00 Uhr in der Instanz-Zeitzone) beginnen, werden nicht mehr angezeigt — besetzt werden muss eine Schicht vor ihrem Beginn, deshalb zählt starts_at, nicht ends_at
@@ -220,23 +222,23 @@
                 const substitutes = state.teams.filter(item => item.teamCode !== shift.team_code).flatMap(item => item.assistants)
                 const options = [...own, ...substitutes].map(assistant => `<option value="${esc(assistant.uid)}">${esc(assistant.displayName)} (${esc(assistant.uid)})</option>`).join('')
                 const listId = `flz-akut-asn-suggestions-${shift.id}`
-                const asInput = `<input type="search" name="assistantUid" data-field="assistantUid" data-id="${shift.id}" list="${listId}" value="${esc(shift.assigned_uid || '')}" placeholder="AS oder Text (z. B. abgesagt)" aria-label="Assistenz Schicht ${shift.id}"${editable && canAssign && !locked ? '' : ' disabled'}><datalist id="${listId}">${options}</datalist>`
-                const maInput = `<input name="maLabel" data-field="maLabel" data-id="${shift.id}" maxlength="6" pattern="[A-Za-zÄÖÜäöüß]{3,6}" size="6" value="${esc(shift.ma_label || '')}" aria-label="Kürzel Schicht ${shift.id}" title="Kürzel: 3–6 Buchstaben"${editable && canAssign ? '' : ' disabled'}>`
-                const commentInput = `<input name="comment" data-field="comment" data-id="${shift.id}" maxlength="2000" value="${esc(shift.comment || '')}" aria-label="Kommentar Schicht ${shift.id}"${editable && canCreate ? '' : ' disabled'}>`
+                const asInput = `<input type="search" name="assistantUid" data-field="assistantUid" data-id="${shift.id}" list="${listId}" value="${esc(shift.assigned_uid || '')}" placeholder="${translate('flz_akut', 'AS oder Text (z. B. abgesagt)')}" aria-label="${translate('flz_akut', 'Assistenz Schicht {id}', {id: shift.id})}"${editable && canAssign && !locked ? '' : ' disabled'}><datalist id="${listId}">${options}</datalist>`
+                const maInput = `<input name="maLabel" data-field="maLabel" data-id="${shift.id}" maxlength="6" pattern="[A-Za-zÄÖÜäöüß]{3,6}" size="6" value="${esc(shift.ma_label || '')}" aria-label="${translate('flz_akut', 'Kürzel Schicht {id}', {id: shift.id})}" title="${translate('flz_akut', 'Kürzel: 3–6 Buchstaben')}"${editable && canAssign ? '' : ' disabled'}>`
+                const commentInput = `<input name="comment" data-field="comment" data-id="${shift.id}" maxlength="2000" value="${esc(shift.comment || '')}" aria-label="${translate('flz_akut', 'Kommentar Schicht {id}', {id: shift.id})}"${editable && canCreate ? '' : ' disabled'}>`
                 const actions = shift.state === 'open' ? actionButton('split', shift.bureau_key, 'split', shift.id, 'Teilen') : ''
                 const reopenIcon = shift.state === 'mediated' && shift.assigned_uid && can('reopen', shift.bureau_key)
-                    ? `<button type="button" class="reopen-icon" data-action="reopen" data-id="${shift.id}" title="Erneut öffnen" aria-label="Erneut öffnen"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>`
+                    ? `<button type="button" class="reopen-icon" data-action="reopen" data-id="${shift.id}" title="${translate('flz_akut', 'Erneut öffnen')}" aria-label="${translate('flz_akut', 'Erneut öffnen')}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>`
                     : ''
                 const hycareButton = shift.assigned_uid ? actionButton('confirmHycare', shift.bureau_key, 'hycare', shift.id, 'HyCare', shift.hycare_at ? 'HyCare eingetragen' : 'Noch nicht in HyCare eingetragen', Boolean(shift.hycare_at)) : ''
                 const paperButton = shift.assigned_uid ? actionButton('confirmPaper', shift.bureau_key, 'paper', shift.id, 'Akte', shift.paper_at ? 'In Akte eingetragen' : 'Noch nicht in Akte eingetragen', Boolean(shift.paper_at)) : ''
                 const szBadge = shift.urgency === 'sz' ? `<span class="sz-badge" title="${esc(urgencyState[1])}">SZ</span>` : ''
-                const mediatedCell = shift.mediated_at ? `<span class="mediated-at" title="Vermittelt am ${esc(fmtDateTime(shift.mediated_at))} Uhr">${esc(fmtMediated(shift.mediated_at))}</span>` : '—'
+                const mediatedCell = shift.mediated_at ? `<span class="mediated-at" title="${translate('flz_akut', 'Vermittelt am {datetime} Uhr', {datetime: esc(fmtDateTime(shift.mediated_at))})}">${esc(fmtMediated(shift.mediated_at))}</span>` : '—'
                 const startDate = new Date(shift.starts_at), endDate = new Date(shift.ends_at)
                 const endCell = `${fmtTime(shift.ends_at)} ${dayNightIcon(shift)}`
                 return `<tr><td class="${dateClass}" title="${esc(shift.hycare_at ? 'In HyCare eingetragen' : urgencyState[1])}">${fmtDate(shift.starts_at)}</td><td class="${dateClass}">${fmtTime(shift.starts_at)}</td><td class="${dateClass}" title="${esc(dayNight(shift).label)}">${endCell}</td><td class="${nameClass} as-cell" title="${esc(shift.paper_at ? 'In Papierakte eingetragen' : urgencyState[1])}"><div class="as-line">${szBadge}<span class="as-field">${asInput}${reopenIcon}</span>${actions}</div></td><td class="mediated-cell">${mediatedCell}</td><td>${maInput}</td><td>${hycareButton || '—'}</td><td>${paperButton || '—'}</td><td>${commentInput}</td></tr>`
             }).join('')
-            const mailButton = can('read', group.bureauKey) ? `<button type="button" data-action="mail" data-team="${esc(group.teamCode)}">Mail</button>` : ''
-            return `<tr class="asn-group"><th colspan="7">${esc(group.displayName)}</th><td colspan="2"><button type="button" data-action="search" data-team="${esc(group.teamCode)}">Suchbogen öffnen</button> ${mailButton}</td></tr>${rows}`
+            const mailButton = can('read', group.bureauKey) ? `<button type="button" data-action="mail" data-team="${esc(group.teamCode)}">${translate('flz_akut', 'Mail')}</button>` : ''
+            return `<tr class="asn-group"><th colspan="7">${esc(group.displayName)}</th><td colspan="2"><button type="button" data-action="search" data-team="${esc(group.teamCode)}">${translate('flz_akut', 'Suchbogen öffnen')}</button> ${mailButton}</td></tr>${rows}`
         }).join('')
         const params = new URLSearchParams(location.search)
         if (params.get('team')) renderSearch(params.get('team'))
@@ -250,32 +252,32 @@
         if (!selectedTeam || !section) return
         searchTeamCode = code
         section.hidden = false
-        document.getElementById('search-sheet-title').textContent = 'Suchbogen ' + selectedTeam.displayName
+        document.getElementById('search-sheet-title').textContent = translate('flz_akut', 'Suchbogen ') + selectedTeam.displayName
         // Nur offene, sichtbare Schichten des Teams; besetzte (vermittelte) Schichten verschwinden aus dem Suchbogen
         const shifts = state.shifts.filter(shift => shift.team_code === code && shift.state === 'open' && isListed(shift))
         // Sammelanzeige aller offenen Schichten über der Tabelle
         const summary = document.getElementById('flz-akut-search-summary')
         if (summary) summary.innerHTML = shifts.length
             ? shifts.map(shift => `<span class="search-shift-chip">${esc(fmtDate(shift.starts_at))} ${esc(fmtTime(shift.starts_at))}–${esc(fmtTime(shift.ends_at))} ${dayNightIcon(shift)}</span>`).join(' ')
-            : '<span class="search-empty">Keine offenen Schichten.</span>'
+            : '<span class="search-empty">' + translate('flz_akut', 'Keine offenen Schichten.') + '</span>'
         // Spalten: Name links fixiert, dann die offenen Schichten, Kontakt rechts fixiert
-        document.getElementById('flz-akut-search-head').innerHTML = '<tr><th class="sticky-left">Assistenz</th>' + shifts.map(shift => `<th>${esc(fmtDate(shift.starts_at))} ${esc(fmtTime(shift.starts_at))}</th>`).join('') + '<th class="sticky-right sticky-tel">Tel</th><th class="sticky-right sticky-sms">SMS</th><th class="sticky-right sticky-comment">Kommentar</th></tr>'
+        document.getElementById('flz-akut-search-head').innerHTML = '<tr><th class="sticky-left">' + translate('flz_akut', 'Assistenz') + '</th>' + shifts.map(shift => `<th>${esc(fmtDate(shift.starts_at))} ${esc(fmtTime(shift.starts_at))}</th>`).join('') + '<th class="sticky-right sticky-tel">Tel</th><th class="sticky-right sticky-sms">SMS</th><th class="sticky-right sticky-comment">' + translate('flz_akut', 'Kommentar') + '</th></tr>'
         const assistants = [...(selectedTeam.assistants || []), ...manualRows]
         document.getElementById('flz-akut-search-body').innerHTML = assistants.map(assistant => {
             // Nur Assistentinnen des Teams; Urlaub/Abwesenheit (falls Provider verfügbar) wird markiert
             const absent = (state.absences || []).some(a => a.uid === assistant.uid && shifts.some(shift => new Date(a.startsAt) < new Date(shift.ends_at) && new Date(a.endsAt) > new Date(shift.starts_at)))
-            const badge = absent ? ` <span class="absence-badge" title="Abwesenheit (z. B. Urlaub) überlappt offene Schichten">Urlaub</span>` : ''
+            const badge = absent ? ` <span class="absence-badge" title="${translate('flz_akut', 'Abwesenheit (z. B. Urlaub) überlappt offene Schichten')}">${translate('flz_akut', 'Urlaub')}</span>` : ''
             // Ja/Nein sitzen in jeder Schicht-Zelle und buchen genau diese Schicht; Tel (n.e./AB) und SMS sind Checkboxen rechts und gelten schichtübergreifend
             const canContact = can('contact', selectedTeam.bureauKey)
-            const shiftCell = shift => !canContact ? `<td>${capacityBadge(assistant.uid, shift)}Status offen</td>` : `<td class="shift-contact">${capacityBadge(assistant.uid, shift)}<button type="button" data-action="contact-yes" data-id="${shift.id}" data-uid="${esc(assistant.uid)}" title="Ja (${esc(fmtDate(shift.starts_at))} ${esc(fmtTime(shift.starts_at))})">Ja</button> <button type="button" data-action="contact-no" data-id="${shift.id}" data-uid="${esc(assistant.uid)}" title="Nein (${esc(fmtDate(shift.starts_at))} ${esc(fmtTime(shift.starts_at))})">Nein</button></td>`
+            const shiftCell = shift => !canContact ? `<td>${capacityBadge(assistant.uid, shift)}${translate('flz_akut', 'Status offen')}</td>` : `<td class="shift-contact">${capacityBadge(assistant.uid, shift)}<button type="button" data-action="contact-yes" data-id="${shift.id}" data-uid="${esc(assistant.uid)}" title="${translate('flz_akut', 'Ja ({datetime})', {datetime: esc(fmtDate(shift.starts_at)) + ' ' + esc(fmtTime(shift.starts_at))})}">${translate('flz_akut', 'Ja')}</button> <button type="button" data-action="contact-no" data-id="${shift.id}" data-uid="${esc(assistant.uid)}" title="${translate('flz_akut', 'Nein ({datetime})', {datetime: esc(fmtDate(shift.starts_at)) + ' ' + esc(fmtTime(shift.starts_at))})}">${translate('flz_akut', 'Nein')}</button></td>`
             const telCell = !canContact ? '<td class="sticky-right sticky-tel">—</td>' : `<td class="sticky-right sticky-tel">${contactCheckbox('tel-ne', 'n.e.', assistant.uid, c => c.channel === 'phone' && c.outcome === 'not_reached')}${contactCheckbox('tel-ab', 'AB', assistant.uid, c => c.channel === 'phone' && c.outcome === 'ab')}</td>`
             const smsCell = !canContact ? '<td class="sticky-right sticky-sms">—</td>' : `<td class="sticky-right sticky-sms">${contactCheckbox('sms', 'SMS', assistant.uid, c => c.channel === 'sms')}</td>`
             // Info-Icon je AS (Hover zeigt die Info, Stift öffnet das Bearbeitungs-Overlay); Kommentarfeld rechts für interne Notizen
             const infoTitle = infoTitleText(assistant)
             // Info-Icon (größer, klickbar) öffnet das Overlay direkt; das Overlay ist normal schreibgeschützt, der Stift-Button im Overlay schaltet die Bearbeitung frei
-            const infoIcon = canContact ? `<button type="button" class="as-info" data-action="as-info" data-uid="${esc(assistant.uid)}" title="${esc(infoTitle)}" aria-label="AS-Info anzeigen für ${esc(assistant.displayName)}"><svg class="as-info-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></button>` : ''
-            const commentCell = !canContact ? '<td class="sticky-right sticky-comment">—</td>' : `<td class="sticky-right sticky-comment"><input type="text" class="as-comment" data-field="asComment" data-uid="${esc(assistant.uid)}" value="${esc(assistant.comment || '')}" maxlength="2000" title="Interner Kommentar zu ${esc(assistant.displayName)}" aria-label="Interner Kommentar zu ${esc(assistant.displayName)}"></td>`
-            const manualRemove = manualRows.some(row => row.uid === assistant.uid) ? `<button type="button" class="manual-remove" data-action="manual-remove" data-uid="${esc(assistant.uid)}" title="Manuelle Zeile entfernen" aria-label="Manuelle Zeile ${esc(assistant.displayName)} entfernen">Entf.</button>` : ''
+            const infoIcon = canContact ? `<button type="button" class="as-info" data-action="as-info" data-uid="${esc(assistant.uid)}" title="${esc(infoTitle)}" aria-label="${translate('flz_akut', 'AS-Info anzeigen für {name}', {name: esc(assistant.displayName)})}"><svg class="as-info-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></button>` : ''
+            const commentCell = !canContact ? '<td class="sticky-right sticky-comment">—</td>' : `<td class="sticky-right sticky-comment"><input type="text" class="as-comment" data-field="asComment" data-uid="${esc(assistant.uid)}" value="${esc(assistant.comment || '')}" maxlength="2000" title="${translate('flz_akut', 'Interner Kommentar zu {name}', {name: esc(assistant.displayName)})}" aria-label="${translate('flz_akut', 'Interner Kommentar zu {name}', {name: esc(assistant.displayName)})}"></td>`
+            const manualRemove = manualRows.some(row => row.uid === assistant.uid) ? `<button type="button" class="manual-remove" data-action="manual-remove" data-uid="${esc(assistant.uid)}" title="${translate('flz_akut', 'Manuelle Zeile entfernen')}" aria-label="${translate('flz_akut', 'Manuelle Zeile {name} entfernen', {name: esc(assistant.displayName)})}">${translate('flz_akut', 'Entf.')}</button>` : ''
             return `<tr><th class="sticky-left">${esc(assistant.displayName)}${badge}${infoIcon}${manualRemove}</th>${shifts.map(shiftCell).join('')}${telCell}${smsCell}${commentCell}</tr>`
         }).join('')
     }
@@ -285,7 +287,7 @@
         const shifts = state.shifts.filter(shift => shift.team_code === searchTeamCode && shift.state === 'open' && isListed(shift))
         // Kurz gehalten (unter 160 Zeichen): Empfänger mit Namen, Zeiten ohne :00-Minuten, Ende mit LG <Vorname>
         const lines = shifts.map(shift => `- ${fmtDate(shift.starts_at)} ${fmtTimeShort(shift.starts_at)}–${fmtTimeShort(shift.ends_at)} Uhr`).join('\n')
-        return `Hallo ${firstName(assistant.displayName)}, offene Schichten im ASN-Team ${selectedTeam ? selectedTeam.displayName : searchTeamCode}:\n${lines || '- keine offenen Schichten'}\nBitte melde dich, wenn du eine übernehmen kannst.\nLG ${senderName()}`
+        return translate('flz_akut', 'Hallo {name}, offene Schichten im ASN-Team {team}:\n{lines}\nBitte melde dich, wenn du eine übernehmen kannst.\nLG {sender}', {name: firstName(assistant.displayName), team: selectedTeam ? selectedTeam.displayName : searchTeamCode, lines: lines || translate('flz_akut', '- keine offenen Schichten'), sender: senderName()})
     }
 
     // Letzter gespeicherter Kontaktzeitpunkt der Assistenz über die offenen Schichten des Teams
@@ -350,7 +352,7 @@
         const assistant = selectedTeam ? (selectedTeam.assistants || []).find(a => a.uid === uid) : null
         if (!assistant || !asinfoDialog || !asinfoForm) return
         const info = assistant.info || {tags: [], note: ''}
-        if (asinfoTitle) asinfoTitle.textContent = 'AS-Info ' + assistant.displayName
+        if (asinfoTitle) asinfoTitle.textContent = translate('flz_akut', 'AS-Info ') + assistant.displayName
         for (const input of Array.from(asinfoForm.querySelectorAll('input[name="asinfo-tag"]'))) input.checked = (info.tags || []).includes(input.value)
         if (asinfoNote) asinfoNote.value = info.note || ''
         setAsInfoEditable(false) // Overlay startet schreibgeschützt; Stift-Button im Overlay schaltet frei
@@ -370,7 +372,7 @@
             if (assistant && result && result.info) assistant.info = result.info
             asinfoDialog.close()
             renderSearch(searchTeamCode)
-            status.textContent = 'AS-Info gespeichert.'
+            status.textContent = translate('flz_akut', 'AS-Info gespeichert.')
         } catch (error) { status.textContent = error.message }
     })
 
@@ -380,7 +382,7 @@
             state = data
             lastStateSignature = JSON.stringify(data)
             render()
-            statusBase = data.providerStatus === 'AVAILABLE' ? 'Bereit.' : 'Planerdaten sind nicht verfügbar.'
+            statusBase = data.providerStatus === 'AVAILABLE' ? translate('flz_akut', 'Bereit.') : translate('flz_akut', 'Planerdaten sind nicht verfügbar.')
             status.textContent = statusBase
         } catch (error) { status.textContent = error.message }
     }
@@ -391,10 +393,10 @@
         for (const row of Array.from(rowsBody.querySelectorAll('tr'))) {
             const values = rowValues(row)
             if (!values.bureau || !can('create', values.bureau)) continue
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(values.date) || !values.startTime || !values.endTime) { status.textContent = 'Jede Zeile braucht Datum und beide Zeitfelder.'; return }
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(values.date) || !values.startTime || !values.endTime) { status.textContent = translate('flz_akut', 'Jede Zeile braucht Datum und beide Zeitfelder.'); return }
             entries.push({teamCode: values.teamCode, bureauKey: values.bureau, startsAt: parseZoned(values.date + 'T' + values.startTime).toISOString(), endsAt: parseZoned(values.date + 'T' + values.endTime).toISOString(), comment: values.comment})
         }
-        if (!entries.length) { status.textContent = 'Mindestens eine Zeile mit ASN-Team des eigenen Büros ist erforderlich.'; return }
+        if (!entries.length) { status.textContent = translate('flz_akut', 'Mindestens eine Zeile mit ASN-Team des eigenen Büros ist erforderlich.'); return }
         try {
             for (const entry of entries) await api('/api/shifts', {method: 'POST', body: JSON.stringify(entry)})
             renderRows([{date: today()}])
@@ -443,17 +445,17 @@
 
     function openMailDialog(teamCode) {
         if (mailText) mailText.value = composeMail(teamCode)
-        if (mailRecipients) mailRecipients.textContent = 'An Team und Vertretung: ' + mailRecipientsFor(teamCode)
+        if (mailRecipients) mailRecipients.textContent = translate('flz_akut', 'An Team und Vertretung: ') + mailRecipientsFor(teamCode)
         if (mailDialog) mailDialog.showModal()
     }
 
     function openActionDialog(type, id, uid) {
         currentAction = {type, id, uid}
-        actionTitle.textContent = {split: 'Schicht teilen', contact: 'Kontaktversuch eintragen', reopenConfirm: 'Schicht erneut öffnen?'}[type] || 'Aktion'
+        actionTitle.textContent = {split: translate('flz_akut', 'Schicht teilen'), contact: translate('flz_akut', 'Kontaktversuch eintragen'), reopenConfirm: translate('flz_akut', 'Schicht erneut öffnen?')}[type] || translate('flz_akut', 'Aktion')
         const submitButton = actionForm.querySelector('button[type=submit]')
-        if (submitButton) submitButton.textContent = type === 'reopenConfirm' ? 'Erneut öffnen' : 'Speichern'
+        if (submitButton) submitButton.textContent = type === 'reopenConfirm' ? translate('flz_akut', 'Erneut öffnen') : translate('flz_akut', 'Speichern')
         if (type === 'reopenConfirm') {
-            actionFields.innerHTML = '<p class="reopen-hint">Sicherheitsabfrage: Die eingetragene Assistenz, das Kürzel, der Besetzungszeitpunkt sowie die HyCare- und Akte-Markierungen dieser Schicht werden entfernt. Wirklich erneut öffnen?</p>'
+            actionFields.innerHTML = '<p class="reopen-hint">' + translate('flz_akut', 'Sicherheitsabfrage: Die eingetragene Assistenz, das Kürzel, der Besetzungszeitpunkt sowie die HyCare- und Akte-Markierungen dieser Schicht werden entfernt. Wirklich erneut öffnen?') + '</p>'
         } else if (type === 'split') {
             const shift = shiftById(id)
             const start = shift ? new Date(shift.starts_at) : null
@@ -468,9 +470,9 @@
             }
             const midMin = Math.round((startMin + endMin) / 2 / 15) * 15
             const rangeText = shift && start && end && !isNaN(start) && !isNaN(end) ? `${fmtDateTime(shift.starts_at)} – ${fmtDateTime(shift.ends_at)} Uhr` : ''
-            actionFields.innerHTML = `<p class="shift-range">Schichtzeitraum: ${esc(rangeText)}</p><label>Teilungsdatum <input name="date" type="date" required value="${esc(dateValue)}"></label><label>Schnittzeit <input name="time" type="time" required value="${minutesToTime(midMin)}"></label><label>Schieberegler <input name="cutRange" type="range" min="${startMin}" max="${endMin}" step="15" value="${midMin}"></label>`
+            actionFields.innerHTML = '<p class="shift-range">' + translate('flz_akut', 'Schichtzeitraum: {range}', {range: esc(rangeText)}) + '</p><label>' + translate('flz_akut', 'Teilungsdatum') + ' <input name="date" type="date" required value="' + esc(dateValue) + '"></label><label>' + translate('flz_akut', 'Schnittzeit') + ' <input name="time" type="time" required value="' + minutesToTime(midMin) + '"></label><label>' + translate('flz_akut', 'Schieberegler') + ' <input name="cutRange" type="range" min="' + startMin + '" max="' + endMin + '" step="15" value="' + midMin + '"></label>'
         } else if (type === 'contact') {
-            actionFields.innerHTML = '<label>Kanal <select name="channel" required><option value="phone">Telefon</option><option value="sms">SMS</option></select></label><label>Ergebnis <select name="outcome" required><option value="open">offen</option><option value="accepted">angenommen</option><option value="declined">abgelehnt</option></select></label><label>Bemerkung <input name="note" maxlength="500"></label>'
+            actionFields.innerHTML = '<label>' + translate('flz_akut', 'Kanal') + ' <select name="channel" required><option value="phone">' + translate('flz_akut', 'Telefon') + '</option><option value="sms">SMS</option></select></label><label>' + translate('flz_akut', 'Ergebnis') + ' <select name="outcome" required><option value="open">' + translate('flz_akut', 'offen') + '</option><option value="accepted">' + translate('flz_akut', 'angenommen') + '</option><option value="declined">' + translate('flz_akut', 'abgelehnt') + '</option></select></label><label>' + translate('flz_akut', 'Bemerkung') + ' <input name="note" maxlength="500"></label>'
         }
         actionDialog.showModal()
     }
@@ -491,7 +493,7 @@
             } else if (currentAction.type === 'split') {
                 const date = String(data.get('date') || '')
                 const time = String(data.get('time') || '')
-                if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !time) { status.textContent = 'Teilungsdatum und -zeit sind erforderlich.'; return }
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !time) { status.textContent = translate('flz_akut', 'Teilungsdatum und -zeit sind erforderlich.'); return }
                 let cut = parseZoned(date + 'T' + time)
                 const shift = shiftById(currentAction.id)
                 if (shift && cut < new Date(shift.starts_at)) { const p = tzParts(cut); cut = zonedToUtc(p.year, p.month, p.day + 1, p.hour, p.minute) }
@@ -517,7 +519,7 @@
             try {
                 const result = await api(`/api/assistants/${encodeURIComponent(uid)}/meta`, {method: 'PUT', body: JSON.stringify({comment: field.value})})
                 if (result && result.comment !== undefined) assistant.comment = result.comment
-                status.textContent = 'Kommentar gespeichert.'
+                status.textContent = translate('flz_akut', 'Kommentar gespeichert.')
             } catch (error) { status.textContent = error.message }
             return
         }
@@ -546,7 +548,7 @@
             const result = await api(`/api/shifts/${id}/update`, {method: 'POST', body: JSON.stringify(payload)})
             const index = state.shifts.findIndex(item => Number(item.id) === id)
             if (index >= 0 && result.shift) state.shifts[index] = result.shift
-            status.textContent = 'Gespeichert.'
+            status.textContent = translate('flz_akut', 'Gespeichert.')
             if (changedAssignment) {
                 render()
                 if (restore && typeof root.querySelector === 'function') {
@@ -570,7 +572,7 @@
         try {
             await recordContact(action.slice('contact-'.length), String(box.dataset.uid || ''))
             renderSearch(searchTeamCode)
-            status.textContent = 'Kontaktversuch gespeichert.'
+            status.textContent = translate('flz_akut', 'Kontaktversuch gespeichert.')
         } catch (error) { status.textContent = error.message; renderSearch(searchTeamCode) }
     })
 
@@ -585,10 +587,10 @@
         if (event.target.closest('#flz-akut-sms-copy')) {
             const text = smsText ? smsText.value : ''
             if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(() => { status.textContent = 'SMS-Text liegt in der Zwischenablage.' }, () => { status.textContent = 'Kopieren nicht möglich; bitte Text manuell markieren und kopieren.' })
+                navigator.clipboard.writeText(text).then(() => { status.textContent = translate('flz_akut', 'SMS-Text liegt in der Zwischenablage.') }, () => { status.textContent = translate('flz_akut', 'Kopieren nicht möglich; bitte Text manuell markieren und kopieren.') })
             } else if (smsText) {
                 smsText.focus(); smsText.select()
-                status.textContent = 'Bitte Text manuell kopieren (Strg+C).'
+                status.textContent = translate('flz_akut', 'Bitte Text manuell kopieren (Strg+C).')
             }
             return
         }
@@ -596,10 +598,10 @@
         if (event.target.closest('#flz-akut-mail-copy')) {
             const text = mailText ? mailText.value : ''
             if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(() => { status.textContent = 'Mail-Text liegt in der Zwischenablage.' }, () => { status.textContent = 'Kopieren nicht möglich; bitte Text manuell markieren und kopieren.' })
+                navigator.clipboard.writeText(text).then(() => { status.textContent = translate('flz_akut', 'Mail-Text liegt in der Zwischenablage.') }, () => { status.textContent = translate('flz_akut', 'Kopieren nicht möglich; bitte Text manuell markieren und kopieren.') })
             } else if (mailText) {
                 mailText.focus(); mailText.select()
-                status.textContent = 'Bitte Text manuell kopieren (Strg+C).'
+                status.textContent = translate('flz_akut', 'Bitte Text manuell kopieren (Strg+C).')
             }
             return
         }
@@ -629,7 +631,7 @@
         if (!button) return
         if (button.dataset.action === 'search') { window.open(OC.generateUrl('/apps/flz_akut/suchbogen?team=' + encodeURIComponent(button.dataset.team)), '_blank', 'noopener'); return }
         if (/^contact-(yes|no)$/.test(button.dataset.action || '')) {
-            try { await recordContact(button.dataset.action.slice('contact-'.length), String(button.dataset.uid || ''), Number(button.dataset.id || 0)) ; status.textContent = 'Kontaktversuch gespeichert.' } catch (error) { status.textContent = error.message }
+            try { await recordContact(button.dataset.action.slice('contact-'.length), String(button.dataset.uid || ''), Number(button.dataset.id || 0)) ; status.textContent = translate('flz_akut', 'Kontaktversuch gespeichert.') } catch (error) { status.textContent = error.message }
             return
         }
         if (button.dataset.action === 'mail') { openMailDialog(button.dataset.team); return }
