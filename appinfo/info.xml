@@ -9,6 +9,9 @@
     <author>Filzmann Software</author>
     <namespace>FlzAkut</namespace>
     <category>organization</category>
+    <website>https://github.com/Filzmann/flz-full-suite</website>
+    <bugs>https://github.com/Filzmann/nextcloud-flz-akut/issues</bugs>
+    <repository type="git">https://github.com/Filzmann/nextcloud-flz-akut</repository>
     <dependencies><php min-version="8.3"/><nextcloud min-version="33" max-version="35"/></dependencies>
     <background-jobs><job>OCA\FlzAkut\BackgroundJob\RetentionJob</job></background-jobs>
     <settings>
