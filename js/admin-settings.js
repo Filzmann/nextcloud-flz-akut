@@ -20,10 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({permissions}),
             })
             const result = await response.json()
-            if (!response.ok) throw new Error(result.error || translate('flz_akut', 'Die Akutberechtigungen konnten nicht gespeichert werden.'))
-            if (status) status.textContent = translate('flz_akut', 'Die Akutberechtigungen wurden gespeichert.')
+            if (!response.ok) throw new Error(result.error || translate('flz_akut', 'Die Berechtigungszuordnung konnte nicht gespeichert werden.'))
+            if (status) status.textContent = translate('flz_akut', 'Die Berechtigungszuordnung wurde gespeichert.')
         } catch (error) {
-            if (status) status.textContent = error instanceof Error ? error.message : translate('flz_akut', 'Die Akutberechtigungen konnten nicht gespeichert werden.')
+            if (status) status.textContent = error instanceof Error ? error.message : translate('flz_akut', 'Die Berechtigungszuordnung konnte nicht gespeichert werden.')
         }
     })
 

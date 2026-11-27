@@ -16,7 +16,7 @@ $officeDayStart = is_string($_['officeDayStart'] ?? null) ? $_['officeDayStart']
 ?>
 <section id="flz-akut-admin" class="section" aria-labelledby="flz-akut-admin-heading">
     <h2 id="flz-akut-admin-heading"><?php p($l->t('Akutschichtvermittlung')); ?></h2>
-    <p><?php p($l->t('Ordne jede fachliche Aktion getrennt den passenden Organigrammrollen zu. Die aktuellen Nextcloud-Gruppen und Bürobereiche werden aus dem LocalBase-Organigramm ermittelt und nicht als zweite Rollenquelle gespeichert.')); ?></p>
+    <p><?php p($l->t('Ordne jede fachliche Aktion getrennt den passenden Organigrammrollen zu. Die Berechtigungsmatrix zeigt Berechtigungen als Zeilen und Organigrammrollen als Spalten. Die aktuellen Nextcloud-Gruppen und Bürobereiche werden aus dem LocalBase-Organigramm ermittelt und nicht als zweite Rollenquelle gespeichert.')); ?></p>
     <p><strong><?php p($l->t('Standard:')); ?></strong><?php p($l->t(' Büroorganisation, Einsatzbegleitung, Büroleitung und Stellvertretende Büroleitung erhalten alle acht Rechte jeweils nur in ihrem Bürobereich.')); ?></p>
 
     <?php if (($selection['message'] ?? '') !== ''): ?>
@@ -24,21 +24,33 @@ $officeDayStart = is_string($_['officeDayStart'] ?? null) ? $_['officeDayStart']
     <?php endif; ?>
 
     <form id="flz-akut-permission-settings">
-        <?php foreach (AkutCapability::DEFINITIONS as $capability => [$permissionId, $label, $description]): ?>
-            <?php $selectedRoles = is_array($settings[$capability] ?? null) ? $settings[$capability] : []; ?>
-            <fieldset>
-                <legend><?php p($label); ?></legend>
-                <p><?php p($description); ?></p>
-                <?php foreach ($options as $option): ?>
-                    <?php $roleKey = (string)($option['roleKey'] ?? ''); $exists = (bool)($option['exists'] ?? false); ?>
-                    <label>
-                        <input type="checkbox" name="<?php p((string)$capability); ?>[]" value="<?php p($roleKey); ?>" <?php if (in_array($roleKey, $selectedRoles, true)): ?>checked<?php endif; ?> <?php if (!$exists): ?>disabled<?php endif; ?>>
-                        <?php p((string)($option['label'] ?? $roleKey)); ?>
-                        <small><?php p((string)($option['groupId'] ?? '')); ?><?php if (!$exists): ?> – Gruppe fehlt; diese Rechtezuordnung bleibt deaktiviert<?php endif; ?></small>
-                    </label>
+        <div class="flz-akut-table-wrap">
+            <table class="flz-akut-matrix">
+                <caption><?php p($l->t('Berechtigungsmatrix')); ?></caption>
+                <thead><tr>
+                    <th scope="col"><?php p($l->t('Berechtigung')); ?></th>
+                    <?php foreach ($options as $option): ?>
+                        <?php $roleKey = (string)($option['roleKey'] ?? ''); ?>
+                        <th scope="col"><?php p((string)($option['label'] ?? $roleKey)); ?> <small><?php p((string)($option['groupId'] ?? '')); ?><?php if (!($option['exists'] ?? false)): ?> – <?php p($l->t('Gruppe fehlt')); ?><?php endif; ?></small></th>
+                    <?php endforeach; ?>
+                </tr></thead>
+                <tbody>
+                <?php foreach (AkutCapability::DEFINITIONS as $capability => [$permissionId, $label, $description]): ?>
+                    <?php $selectedRoles = is_array($settings[$capability] ?? null) ? $settings[$capability] : []; ?>
+                    <tr data-capability="<?php p((string)$capability); ?>">
+                        <th scope="row"><?php p($label); ?> <small><?php p($description); ?></small></th>
+                        <?php foreach ($options as $option): ?>
+                            <?php $roleKey = (string)($option['roleKey'] ?? ''); $exists = (bool)($option['exists'] ?? false); $optionLabel = (string)($option['label'] ?? $roleKey); ?>
+                            <td><label>
+                                <input type="checkbox" name="<?php p((string)$capability); ?>[]" value="<?php p($roleKey); ?>" <?php if (in_array($roleKey, $selectedRoles, true)): ?>checked<?php endif; ?> <?php if (!$exists): ?>disabled<?php endif; ?> aria-label="<?php p($l->t('%1$s: %2$s', [$label, $optionLabel])); ?>">
+                                <?php p($optionLabel); ?>
+                            </label></td>
+                        <?php endforeach; ?>
+                    </tr>
                 <?php endforeach; ?>
-            </fieldset>
-        <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
         <button type="submit" class="primary" <?php if (!($selection['available'] ?? false)): ?>disabled<?php endif; ?>><?php p($l->t('Berechtigungen speichern')); ?></button>
         <p id="flz-akut-permission-settings-status" role="status" aria-live="polite"></p>
     </form>

@@ -1,6 +1,13 @@
 OC.L10N.register(
     "flz_akut",
     {
+    "Berechtigungsmatrix" : "Permission matrix",
+    "Berechtigung" : "Permission",
+    "%1$s: %2$s" : "%1$s: %2$s",
+    "Gruppe fehlt" : "Group missing",
+    "Ordne jede fachliche Aktion getrennt den passenden Organigrammrollen zu. Die Berechtigungsmatrix zeigt Berechtigungen als Zeilen und Organigrammrollen als Spalten. Die aktuellen Nextcloud-Gruppen und Bürobereiche werden aus dem LocalBase-Organigramm ermittelt und nicht als zweite Rollenquelle gespeichert." : "Assign each domain action separately to the appropriate organization chart roles. The permission matrix shows permissions as rows and organization chart roles as columns. The current Nextcloud groups and office areas are taken from the LocalBase organization chart and are not stored as a second role source.",
+    "Die Berechtigungszuordnung wurde gespeichert." : "The permission assignment was saved.",
+    "Die Berechtigungszuordnung konnte nicht gespeichert werden." : "The permission assignment could not be saved.",
     " (Vorname der eingeloggten Person). Leer lassen setzt die Standardvorlage." : " (first name of the logged-in person). Leave empty to restore the default template.",
     " Büroorganisation, Einsatzbegleitung, Büroleitung und Stellvertretende Büroleitung erhalten alle acht Rechte jeweils nur in ihrem Bürobereich." : " Office organisation, assignment support, office management and deputy office management each receive all eight permissions only within their own office area.",
     " nur Früh" : " early only",

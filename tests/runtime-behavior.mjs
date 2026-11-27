@@ -451,7 +451,7 @@ async function adminScenario() {
     vm.runInNewContext(fs.readFileSync(path, 'utf8'), context, {filename: path})
     document.handler()
     await permForm.handlers.submit({preventDefault() {}})
-    assert.equal(permStatus.textContent, 'Die Akutberechtigungen wurden gespeichert.')
+    assert.equal(permStatus.textContent, 'Die Berechtigungszuordnung wurde gespeichert.')
     assert.equal(calls[0][1].method, 'PUT')
     assert.equal(calls[0][1].headers.requesttoken, 'synthetic-token')
     assert.deepEqual(JSON.parse(calls[0][1].body).permissions.read, ['role-a'])
