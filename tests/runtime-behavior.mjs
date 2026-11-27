@@ -447,7 +447,7 @@ async function adminScenario() {
     let formValues = {'read[]': ['role-a']}
     class FD { getAll(name) { return formValues[name] || [] } get(name) { return formValues[name] ?? null } }
     const path = fileURLToPath(new URL('../js/admin-settings.js', import.meta.url))
-    const context = {document, OC: {requestToken: 'synthetic-token', generateUrl: path => path, getCurrentUser: () => ({uid: 'dispo', displayName: 'Tom Dispatcher'})}, FormData: FD, fetch: async (...args) => {calls.push(args); return result}, Error}
+    const context = {document, window: {}, OC: {requestToken: 'synthetic-token', generateUrl: path => path, getCurrentUser: () => ({uid: 'dispo', displayName: 'Tom Dispatcher'})}, FormData: FD, fetch: async (...args) => {calls.push(args); return result}, Error}
     vm.runInNewContext(fs.readFileSync(path, 'utf8'), context, {filename: path})
     document.handler()
     await permForm.handlers.submit({preventDefault() {}})
@@ -478,7 +478,7 @@ async function profileScenario() {
     const document = {getElementById: id => ({'flz-akut-profile-form': form, 'flz-akut-profile-status': status, 'flz-akut-profile-kuerzel': input, 'flz-akut-profile-suggestions': suggestionsBox})[id]}
     const calls = []
     let conflict = true
-    const context = {document, OC: {requestToken: 'synthetic-token', generateUrl: path => path}, fetch: async (...args) => { calls.push(args); if (conflict) return response({ok: false, error: 'Dieses Kürzel ist bereits vergeben.', suggestions: ['DI1', 'D.I']}, false); return response({ok: true, kuerzel: 'DI1'}) }}
+    const context = {document, window: {}, OC: {requestToken: 'synthetic-token', generateUrl: path => path}, fetch: async (...args) => { calls.push(args); if (conflict) return response({ok: false, error: 'Dieses Kürzel ist bereits vergeben.', suggestions: ['DI1', 'D.I']}, false); return response({ok: true, kuerzel: 'DI1'}) }}
     const path = fileURLToPath(new URL('../js/profile-personal.js', import.meta.url))
     vm.runInNewContext(fs.readFileSync(path, 'utf8'), context, {filename: path})
     // Kollision: Server antwortet mit Vorschlägen, die als anklickbare Buttons erscheinen

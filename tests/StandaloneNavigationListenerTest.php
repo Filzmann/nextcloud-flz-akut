@@ -27,6 +27,7 @@ namespace OCP\App {
 
 namespace {
     use OCA\FlzAkut\Listener\StandaloneNavigationListener;
+    use OCA\FlzAkut\Tests\Support\FakeL10N;
     use OCA\LocalBase\Catalog\FlzProductCatalog;
     use OCA\LocalBase\Service\StandaloneAppNavigationService;
     use OCP\App\IAppManager;
@@ -69,7 +70,7 @@ namespace {
         $navigation,
         $url,
         new FlzProductCatalog(),
-    ));
+    ), new FakeL10N());
     $listener->handle(new Event());
     if ($navigation->entries !== []) {
         throw new RuntimeException('Ein fremdes Event registriert Akut-Navigation.');
