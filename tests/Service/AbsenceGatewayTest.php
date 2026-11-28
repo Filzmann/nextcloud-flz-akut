@@ -17,8 +17,8 @@ namespace OCP\EventDispatcher {
 
 namespace {
     use OCA\FlzAkut\Service\AbsenceGateway;
-    use OCA\LocalBase\Calendar\AbsenceInterval;
-    use OCA\LocalBase\Calendar\AbsenceQueryEvent;
+    use OCA\FlzOrganization\PublicApi\V1\AbsenceInterval;
+    use OCA\FlzOrganization\PublicApi\V1\AbsenceQueryEvent;
     use OCP\EventDispatcher\IEventDispatcher;
 
     require_once dirname(__DIR__) . '/bootstrap.php';

@@ -10,6 +10,8 @@ spl_autoload_register(static function (string $class) use ($appRoot, $workspaceR
         'OCA\\FlzAkut\\Tests\\' => $appRoot . '/tests/',
         'OCA\\FlzAkut\\' => $appRoot . '/lib/',
         'OCA\\LocalBase\\Tests\\' => $workspaceRoot . '/localbase/tests/',
+        // Contract tests exercise the real optional provider through this test-only boundary.
+        'OCA\\FlzOrganization\\' => $workspaceRoot . '/flz_organization/lib/',
         'OCA\\FlzDataProtection\\' => $workspaceRoot . '/flz_data_protection/lib/',
         'OCA\\FlzPermissionMatrix\\' => $workspaceRoot . '/flz_permission_matrix/lib/',
         'OCA\\LocalBase\\' => $workspaceRoot . '/localbase/lib/',

@@ -1,6 +1,7 @@
 OC.L10N.register(
     "flz_akut",
     {
+    "Akutschichtvermittlung" : "Acute shift mediation",
     "Berechtigungsmatrix" : "Permission matrix",
     "Berechtigung" : "Permission",
     "%1$s: %2$s" : "%1$s: %2$s",

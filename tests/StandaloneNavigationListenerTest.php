@@ -16,6 +16,8 @@ namespace OCP {
         public function linkToRoute(string $routeName, array $arguments = []): string;
         public function imagePath(string $appName, string $file): string;
     }
+}
+namespace OCP\Navigation {
     interface INavigationManager {
         public const TYPE_APPS = 'link';
         public function add(callable $entry): void;
@@ -28,11 +30,9 @@ namespace OCP\App {
 namespace {
     use OCA\FlzAkut\Listener\StandaloneNavigationListener;
     use OCA\FlzAkut\Tests\Support\FakeL10N;
-    use OCA\LocalBase\Catalog\FlzProductCatalog;
-    use OCA\LocalBase\Service\StandaloneAppNavigationService;
     use OCP\App\IAppManager;
     use OCP\EventDispatcher\Event;
-    use OCP\INavigationManager;
+    use OCP\Navigation\INavigationManager;
     use OCP\IURLGenerator;
     use OCP\IUser;
     use OCP\IUserSession;
@@ -64,13 +64,7 @@ namespace {
         }
     };
 
-    $listener = new StandaloneNavigationListener(new StandaloneAppNavigationService(
-        $session,
-        $apps,
-        $navigation,
-        $url,
-        new FlzProductCatalog(),
-    ), new FakeL10N());
+    $listener = new StandaloneNavigationListener($session, $apps, $navigation, $url, new FakeL10N());
     $listener->handle(new Event());
     if ($navigation->entries !== []) {
         throw new RuntimeException('Ein fremdes Event registriert Akut-Navigation.');
@@ -82,7 +76,7 @@ namespace {
         || ($entry['href'] ?? null) !== '/route/flz_akut.page.index'
         || ($entry['icon'] ?? null) !== '/image/flz_akut/app.svg'
         || ($entry['order'] ?? null) !== 86) {
-        throw new RuntimeException('Akut erhält keinen katalogisierten Standalone-Einstieg.');
+        throw new RuntimeException('Akut erhält keinen app-lokalen Standalone-Einstieg.');
     }
 
     $apps->suiteEnabled = true;

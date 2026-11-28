@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace OCA\FlzAkut\Service;
 
-use OCA\LocalBase\Calendar\AbsenceQueryEvent;
+use OCA\FlzOrganization\PublicApi\V1\AbsenceQueryEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 
 /**
- * Liest Abwesenheiten (z. B. Urlaub) read-only über den LocalBase-AbsenceQueryEvent-Vertrag.
+ * Liest Abwesenheiten (z. B. Urlaub) read-only über den öffentlichen V1-AbsenceQueryEvent-Vertrag von flz_organization.
  * Ohne Provider (Urlaubs-App nicht verfügbar) bleibt das Ergebnis leer — ein gültiger Standalone-Zustand.
  */
 final class AbsenceGateway {
