@@ -17,7 +17,7 @@ namespace OCP {
         public function imagePath(string $appName, string $file): string;
     }
 }
-namespace OCP\Navigation {
+namespace OCP {
     interface INavigationManager {
         public const TYPE_APPS = 'link';
         public function add(callable $entry): void;
@@ -32,7 +32,7 @@ namespace {
     use OCA\FlzAkut\Tests\Support\FakeL10N;
     use OCP\App\IAppManager;
     use OCP\EventDispatcher\Event;
-    use OCP\Navigation\INavigationManager;
+    use OCP\INavigationManager;
     use OCP\IURLGenerator;
     use OCP\IUser;
     use OCP\IUserSession;
