@@ -3,6 +3,10 @@ import fs from 'node:fs'
 import vm from 'node:vm'
 import {fileURLToPath} from 'node:url'
 
+// Der App-Szenario-State nutzt die Organisationszeitzone Europe/Berlin; ohne gepinnte
+// Systemzeitzone wären die Date-/toLocaleString-Vergleiche maschinenabhängig (CI läuft in UTC).
+process.env.TZ = 'Europe/Berlin'
+
 function node() {
     return {innerHTML: '', textContent: '', value: '', hidden: true, disabled: false, id: '', handlers: {}, addEventListener(type, fn) { this.handlers[type] = fn }, focus() {}, select() {}}
 }
